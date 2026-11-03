@@ -6,6 +6,6 @@
 - Use typed local actions and stable record IDs. Validate model-selected tools and base confirmations on committed results. Test retry handling, ambiguity, completion and undo.
 - Store secrets in iPhone Keychain. No credentials in Watch transfers, fixtures, screenshots or logs.
 - Preserve the same character across devices. Runtime states follow real capture, request and audio events. Cached/procedural motion must work without model requests.
-- Follow the agreed Figma review before implementing the product UI. Non-UI domain and integration experiments may proceed independently.
+- Follow the agreed design review before integrating the production UI. Native SwiftUI previews are the design source; the private design prototype is not production app evidence. Non-UI domain and integration experiments may proceed independently.
 - Use isolated Avatodo build output, such as `.build` for Swift packages and `build/DerivedData` for app builds.
 - Report source, tests, simulator, physical device and published release evidence separately. Never present design mockups or fixtures as a live model demo.

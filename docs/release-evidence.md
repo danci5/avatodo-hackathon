@@ -10,7 +10,7 @@ This file records verified results, not planned capabilities.
 | Physical iPhone/Watch | User reports version 27.2; exact models and current connection not yet verified |
 | Meta account requests | Not yet executed from this app |
 | Character pipeline | Designed; no verified Muse-generated animation package yet |
-| UI | Editable phone and Watch proposal exported and visually checked; Daniel requested design adjustments. No product UI implemented |
+| UI | A separate private native SwiftUI design prototype is under review, using system typography and Liquid Glass. No production UI integrated |
 | Public release / TestFlight | Not released |
 | Demo video / hackathon submission | Not produced / not submitted |
 

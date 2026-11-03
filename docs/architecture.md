@@ -20,7 +20,13 @@ The iPhone is the source of truth. The intended app persistence adapter is Swift
 
 Start with tap-to-talk, an explicit stop control and visible transcription. Evaluate Apple speech recognition on the actual phone/locale and system speech synthesis on the active device. On-device speech availability must be tested rather than assumed. Watch audio may be relayed to iPhone for transcription.
 
+The intended Watch listening state shows the latest two or three lines of partial transcription, with a smaller companion. Partial text may revise; only a finalized utterance triggers task actions. Apple Speech supports partial results, but the installed Watch SDK does not contain Speech.framework. Evaluate short bounded audio chunks to the phone recognizer and partial-text updates back to Watch. Do not represent post-recording transcription as live transcription. [Apple speech request documentation](https://developer.apple.com/documentation/speech/sfspeechrecognitionrequest/shouldreportpartialresults)
+
 The first hardware trial must establish what works with the paired phone foregrounded, backgrounded, locked or unreachable. Do not promise autonomous Watch operation until measured. A queued request is pending, not saved. Offline notes remain readable; remote reasoning/image requests need connectivity.
+
+Normal use should leave the iPhone in a pocket. An active Watch app can wake its reachable paired iOS app in the background through Watch Connectivity; this is an execution opportunity, not an always-running agent service. Acknowledge receipt promptly, persist request identity, and report completion only after a durable task result. Test the complete transcription/model/save/reply path, execution expiry and lost replies on hardware without an attached debugger. [Apple Watch Connectivity documentation](https://developer.apple.com/documentation/watchconnectivity/wcsession/sendmessage(_:replyhandler:errorhandler:))
+
+Separate disconnected-before-send, result-pending, setup-required and completed states. A timeout or lost reply does not prove the list is unchanged: check the existing request receipt before retrying. Ask to open the phone app for specific setup/recovery, not as the default condition for every Watch conversation. Keychain and data protection must support the tested locked-phone behavior; evaluate a device-only after-first-unlock credential policy and handle the first unlock after restart explicitly. [Apple Keychain accessibility](https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlockthisdeviceonly)
 
 ## Model action loop
 
