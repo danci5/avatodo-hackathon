@@ -4,13 +4,16 @@ This file records verified results, not planned capabilities.
 
 | Area | Current evidence |
 |---|---|
-| Repository | Private repository created 3 November 2026; initial source setup underway |
+| Repository | Private repository created 3 November 2026; initial documentation committed and pushed, remote head verified |
+| Local task engine | Swift 6 package built on macOS with Xcode 27.0 / Swift 6.4; 9 Swift Testing tests passed on 3 November 2026 using `bash scripts/test.sh` |
 | Application build | Not yet verified |
 | Physical iPhone/Watch | User reports version 27.2; exact models and current connection not yet verified |
 | Meta account requests | Not yet executed from this app |
 | Character pipeline | Designed; no verified Muse-generated animation package yet |
-| UI | Editable phone and Watch proposal exported and visually checked; awaiting design review. No product UI implemented |
+| UI | Editable phone and Watch proposal exported and visually checked; Daniel requested design adjustments. No product UI implemented |
 | Public release / TestFlight | Not released |
 | Demo video / hackathon submission | Not produced / not submitted |
 
 Before release, record source commit, model IDs, device/OS, test results, measured latency, full command-to-saved-result recordings, asset provenance and any limitations. Verify public repository and video access while logged out.
+
+The package tests cover grocery replacement, atomic multi-item completion, undo and reopening, concurrent duplicate requests, payload reuse rejection, stale edits/undo, delete/recover, failed writes, ambiguous titles, invalid inputs and unsupported snapshot versions. These are local domain tests with fictional data, not model, speech, simulator or physical-device evidence. JSON atomic persistence is the development adapter; native SwiftData integration remains planned.

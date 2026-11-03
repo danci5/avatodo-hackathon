@@ -2,7 +2,7 @@
 
 A personalized companion for iPhone and Apple Watch, demonstrated with a task agent.
 
-**Status: early development.** Repository setup and design work are in progress. There is no released iPhone or Watch app yet. Planned features below are not claims of working behavior.
+**Status: early development.** A standalone local task engine is implemented; the iPhone and Watch UI is in design review. There is no released iPhone or Watch app yet. Planned features below are not claims of working behavior.
 
 ## First release
 
@@ -18,6 +18,8 @@ Image generation and language reasoning require internet and provider access. An
 The planned native app targets iOS/watchOS 27. Building and installing on hardware will require a compatible Xcode version, Apple signing, a paired iPhone/Watch, and your own enabled Meta account. Exact supported devices and setup instructions will be published after physical-device verification. Do not assume cloning this repository installs a Watch app automatically.
 
 See [architecture](docs/architecture.md), [contributing](CONTRIBUTING.md), and [release evidence](docs/release-evidence.md).
+
+To work on the existing Swift package, see [local task engine](docs/local-task-engine.md). Its tests require no model API key.
 
 ## Privacy and source ownership
 
