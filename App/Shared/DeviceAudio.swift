@@ -118,7 +118,11 @@ import Foundation
     static var defaultLanguage: String { AVSpeechSynthesisVoice.currentLanguageCode() }
     static func installedVoiceOptions() -> [SpeechVoiceOption] {
         AVSpeechSynthesisVoice.speechVoices().filter { !$0.voiceTraits.contains(.isPersonalVoice) }.map(option)
-            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+            .sorted {
+                if $0.isNovelty != $1.isNovelty { return !$0.isNovelty }
+                if $0.quality != $1.quality { return $0.quality.rawValue > $1.quality.rawValue }
+                return $0.label.localizedStandardCompare($1.label) == .orderedAscending
+            }
     }
     private static func option(_ voice: AVSpeechSynthesisVoice) -> SpeechVoiceOption {
         SpeechVoiceOption(id: voice.identifier, name: voice.name, language: voice.language,
