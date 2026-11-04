@@ -2,11 +2,11 @@
 
 Checkpoint: 4 November 2026. The voice-personalization candidate is **0.1.0 (5)** from native source [`f274b28a69d9da5ae278f090e117ff057a3fdb52`](https://github.com/danci5/avatodo-hackathon/commit/f274b28a69d9da5ae278f090e117ff057a3fdb52). Its clean signed archive, App Store distribution export and upload succeeded. App Store Connect confirmed it fully processed as **Ready to Submit**, with a 90-day testing window and association with the internal group’s one invited owner. Build 5 installation is unconfirmed. The owner reports phone catalog authentication, typed inference, and subsequently live words plus a reply after stopping a Mac connection. The installed version was not confirmed, so the voice report is not attributed to build 4 or 5. Chosen-voice playback, voice-to-saved-note actions and Watch installation remain unconfirmed.
 
-The repository is temporarily private during preparation at the owner's request; restore public visibility and repeat logged-out access checks before submission. Earlier native source `75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78` and the first checkpoint `705750446f00588b42b22beb139fa3443ce64c1d` remain the provenance for historical typed simulator/custom-artwork evidence below.
+Earlier native source `75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78` and the first checkpoint `705750446f00588b42b22beb139fa3443ce64c1d` remain the provenance for historical typed simulator/custom-artwork evidence below.
 
 | Area | Current evidence |
 |---|---|
-| Repository | Temporarily private [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), Apache-2.0. Before visibility was changed on 4 November, unauthenticated access and a fresh mirror of all published branches were verified; a fresh public clone of native source `75c6c3f` built both Simulator targets successfully. Those are historical checks. Source, assets and generated project are included without another private dependency. Public visibility is a submission gate |
+| Repository | [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), Apache-2.0. A fresh public clone of native source `75c6c3f` built both Simulator targets successfully on 4 November. That is a historical source check. The repository includes source, assets and the generated project required to build the app |
 | Shared Swift domain/agent | 26 exact-source tests pass on macOS with Xcode 27 / Swift 6.4: the original 15 domain/agent cases, five HTTP/catalog cases and six speech-finalization cases. Speech cases reject partial/no-audio/empty/error/late-error results and additional audio after an earlier final; diagnostics cannot echo arbitrary error-domain text |
 | Shared Swift live Meta | Seven production Swift agent/store checks passed with fictional data and passed again after the HTTP diagnostic changes. The production Swift catalog check also authenticated and listed both required models without inference. The earlier seven-request run took 16.13 seconds; see [live evidence](shared-swift-live-evidence.md). These Mac results do not validate the key stored on the phone |
 | Earlier model access | Six direct Mac API checks passed for ordinary replies, fictional checklist actions, Muse Image generation and reference editing. The fixture writer was separate from the later production Swift agent check. See [access evidence](meta-access-evidence.md) |
@@ -28,7 +28,7 @@ The repository is temporarily private during preparation at the owner's request;
 
 | Stage | Verified result |
 |---|---|
-| Source | Native source `f274b28a69d9da5ae278f090e117ff057a3fdb52` pushed to the private origin and remote SHA matched; archive was made from a clean working tree |
+| Source | Native source `f274b28a69d9da5ae278f090e117ff057a3fdb52` pushed to origin and remote SHA matched; archive was made from a clean working tree |
 | Archive | Clean 0.1.0 (5) archive passed with matching phone/Watch identifiers and versions; both use the verified paid team |
 | Distribution export | App Store export succeeded; both signatures/profiles verified, debugger entitlement false, no device-limited provisioning |
 | Local exported IPA | 6,602,489 bytes; SHA-256 `330b47000d2fc52aa950d4223bb46fd6860c350a9cd069d1a4eeeb135cb13165` |
@@ -93,8 +93,6 @@ The in-app prompt described a little lion with black Wayfarer sunglasses, soft g
 
 Experimental Simulator capture requires `AVATODO_ENABLE_SIMULATOR_MICROPHONE=1`. That path has not passed live voice on this host; physical capture is unchanged. Only finalized speech may trigger tools, and incomplete/interrupted audio must not execute a partial request. A missing reply does not prove nothing was saved.
 
-Before a device release, record exact signed source/build, device/OS and measured latency; verify full command-to-saved-result recordings, persistence after reopening, lost/duplicate delivery, invalid key, no network, permission denial, background expiration, locked/force-quit phone, interrupted playback and failed character transfer. The historical `75c6c3f` source built from a fresh public clone before the repository became private; that is not a fresh public-clone check of the later TestFlight candidate. Repeat public access/build checks for the submission source. None of the build, typed Simulator or model-access evidence substitutes for those hardware checks.
-
-Inspect the final three-minute film and public repository from a logged-out browser before submission. Show only completed event work, label Simulator footage and any sped-up waits, and do not present an unimplemented flow as working.
+Before a device release, record exact signed source/build, device/OS and measured latency; verify full command-to-saved-result recordings, persistence after reopening, lost/duplicate delivery, invalid key, no network, permission denial, background expiration, locked/force-quit phone, interrupted playback and failed character transfer. The historical `75c6c3f` fresh-clone build does not validate the later TestFlight candidate. None of the build, typed Simulator or model-access evidence substitutes for those hardware checks.
 
 Apple’s [TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/) distinguishes upload, invitation, installation and review, and documents the 90-day testing window. Apple’s [Developer Mode guidance](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device) separates Xcode development from TestFlight installation.

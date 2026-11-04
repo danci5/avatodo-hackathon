@@ -1,0 +1,53 @@
+{
+  "purpose": "README branding banner",
+  "created": "2026-11-04",
+  "generator": "Codex built-in image generation",
+  "reference_asset": "../../App/Resources/Assets.xcassets/DefaultLion.imageset/lion.png",
+  "reference_provenance": "../../App/Resources/asset-provenance.json",
+  "reference_sha256": "8f238403d1256b12553089ec99317e9fc4a0195ad38a23dd4eb961928e7a83b7",
+  "license_note": "Generated artwork remains subject to applicable generation-provider terms.",
+  "encoding": {
+    "format": "WebP",
+    "quality": 92,
+    "method": 6,
+    "resize": "Lanczos, 1800 x 600"
+  },
+  "variants": {
+    "dark": {
+      "asset": "avatodo-banner-dark.webp",
+      "dimensions": [
+        1800,
+        600
+      ],
+      "bytes": 98018,
+      "sha256": "9e2694fc442e31d93d6cd0f9fd40f490d05570d3834c8837e763378ff84bb1ae",
+      "source_sha256": "6c8b4b47f7d9acd0ce57ded2d4833477426e4ea1f5e1f2cbd0c99782cdb16b46"
+    },
+    "light": {
+      "asset": "avatodo-banner-light.webp",
+      "dimensions": [
+        1800,
+        600
+      ],
+      "bytes": 99292,
+      "sha256": "6f86eb27b3f122500a549c96ebfc6ef00d7264a0477d903bf203278b8a7b3392",
+      "source_sha256": "88645e4c86ce5ad2dc7ec84a47e54ac580b34dff6ca35a157be736dcbd521848"
+    }
+  },
+  "prompts": {
+    "dark": "Use case: precise-object-edit / typography adjustment. Edit the supplied existing Avatodo banner with ONE small typography change: reduce the blue sentence 'Create your own avatar.' so that it has EXACTLY THE SAME FONT SIZE, FONT FAMILY, FONT WEIGHT, LETTER SPACING and CAPITAL-LETTER HEIGHT as the sentence immediately above it, 'Your voice-driven agent for to-dos and checklists.' The blue avatar sentence is currently about one third larger/heavier and must become visibly smaller to match that voice-driven line. Because the avatar sentence has fewer words, at the same font size its total width should be about half the width of the voice-driven sentence. Keep both sentences aligned to the same left edge. Keep the blue color. Do not enlarge the voice-driven sentence. Preserve all other elements: the huge Avatodo title, the lion's precise appearance/pose/sunglasses and full body, smooth background gradients, all text wording, all other typography, supporting text and the clean 3:1 composition. The complete text remains exactly: 'Avatodo'; 'Your voice-driven agent for to-dos and checklists.'; 'Create your own avatar.'; 'Runs locally on iPhone. Powered by Meta models.'; 'With you on Apple Watch.' No new words, characters, icons or decoration. Deliver only the edited banner. The visual hierarchy is Avatodo title first; the two feature sentences equal in font size and weight; the smaller gray technical description last. Preserve the existing DARK theme's colors and smooth gradient.",
+    "light": "Use case: precise-object-edit / typography adjustment. Edit the supplied existing Avatodo banner with ONE small typography change: reduce the blue sentence 'Create your own avatar.' so that it has EXACTLY THE SAME FONT SIZE, FONT FAMILY, FONT WEIGHT, LETTER SPACING and CAPITAL-LETTER HEIGHT as the sentence immediately above it, 'Your voice-driven agent for to-dos and checklists.' The blue avatar sentence is currently about one third larger/heavier and must become visibly smaller to match that voice-driven line. Because the avatar sentence has fewer words, at the same font size its total width should be about half the width of the voice-driven sentence. Keep both sentences aligned to the same left edge. Keep the blue color. Do not enlarge the voice-driven sentence. Preserve all other elements: the huge Avatodo title, the lion's precise appearance/pose/sunglasses and full body, smooth background gradients, all text wording, all other typography, supporting text and the clean 3:1 composition. The complete text remains exactly: 'Avatodo'; 'Your voice-driven agent for to-dos and checklists.'; 'Create your own avatar.'; 'Runs locally on iPhone. Powered by Meta models.'; 'With you on Apple Watch.' No new words, characters, icons or decoration. Deliver only the edited banner. The visual hierarchy is Avatodo title first; the two feature sentences equal in font size and weight; the smaller gray technical description last. Preserve the existing LIGHT theme's colors and smooth gradient."
+  },
+  "revision": "Match avatar feature typography to voice-driven description",
+  "reference_banner_commit": "bd6a513ee5c5d0c0f8e1398e859f7096fa3eb1ef",
+  "reference_banners": {
+    "dark": {
+      "asset": "avatodo-banner-dark.webp",
+      "sha256": "5bf2b6f7407a1a8820a77f89a07f17420989b2bdedc46ad7a5f0d73b6d99ed7e"
+    },
+    "light": {
+      "asset": "avatodo-banner-light.webp",
+      "sha256": "dc6192cce8290535fc72d1d777c5049fa462d86f822ac395847e2a541994ece0"
+    }
+  }
+}
