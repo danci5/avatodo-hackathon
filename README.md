@@ -4,7 +4,7 @@ A personalized companion for iPhone and Apple Watch, demonstrated with a local n
 
 The iPhone runs the agent, stores your notes and calls Meta directly with **your own API key**. There is no Avatodo-hosted backend, shared developer key or mandatory account.
 
-**Development status:** native iPhone and Watch targets are implemented and have built in simulators. The shared Swift agent passes local tests and live Meta checks. The iPhone simulator has created a real note, and a typed Watch request has crossed to the phone agent, saved a three-item grocery list and returned a Watch result. The complete microphone → Watch → saved-note flow and physical-device reliability are still being verified. There is no App Store or TestFlight release yet. See [release evidence](docs/release-evidence.md) for the limits of each result.
+**Development status:** native iPhone and Watch targets build and run in paired simulators. Actual Meta calls have created notes, corrected and completed checklist items, and generated a custom companion that appears on both devices. Typed Watch requests reach the iPhone agent and local store. The complete microphone → Watch → saved-note flow and physical-device reliability are still being verified. There is no App Store or TestFlight release yet. See [release evidence](docs/release-evidence.md) for the limits of each result.
 
 ## The companion
 
@@ -33,6 +33,7 @@ The generated Xcode project and all required artwork are included. XcodeGen is n
 ```sh
 bash scripts/test.sh
 zsh scripts/check-audio-relay.sh
+zsh scripts/check-character-transfer.sh
 ```
 
 These local checks need no API key. An explicit live check, `swift run AvatodoProbe --run-live`, sends billable requests with fictional notes; see [secure Meta development setup](docs/meta-development-setup.md) first.

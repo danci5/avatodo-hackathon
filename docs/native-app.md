@@ -46,7 +46,7 @@ The Watch never receives the key. A development key saved in macOS Keychain does
 
 ## Use the app
 
-The included lion is ready immediately. **Your companion** lets you keep the default or describe a custom companion for Muse Image. The image is prepared and animated locally; custom creation is not yet accepted as an end-to-end native/Watch flow.
+The included lion is ready immediately. **Your companion** lets you keep the default or describe a custom companion for Muse Image. The image is prepared and animated locally. Real in-app creation and matching artwork on both paired simulators have been verified; physical-device creation/transfer remains to be tested.
 
 The Companion screen supports ordinary conversation and requests to create or change notes. Notes lists your saved notes, tasks and checklists, with manual editing and completion. Open a note and choose **Update this note** for an exact-note interaction in a compact bottom panel. The note stays visible above it.
 

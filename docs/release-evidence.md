@@ -1,50 +1,49 @@
 # Release evidence
 
-Checkpoint: 4 November 2026. This records observed results separately from source-level behavior and pending device acceptance. The current native integration is not yet a published, installable release; a final source commit and capture manifest must be recorded before release claims.
+Checkpoint: 4 November 2026. Native source is published at [`75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78`](https://github.com/danci5/avatodo-hackathon/commit/75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78), following the first native checkpoint `705750446f00588b42b22beb139fa3443ce64c1d`. This is developer source, not an installable App Store/TestFlight release. Observed simulator results and pending physical acceptance are distinguished below.
 
 | Area | Current evidence |
 |---|---|
-| Repository | Public [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), Apache-2.0. Unauthenticated access and a fresh mirror of every published branch were verified on 4 November. Current native changes still need their final published-source checkpoint |
-| Shared Swift domain/agent | 15 current-source tests passed on macOS with Xcode 27 / Swift 6.4. Includes atomic persistence/Undo, scope, ordinary non-mutating chat, history trimming without limiting twenty additions, retry/restart recovery, protected idle expiry and truthful failed writes |
-| Shared Swift live Meta | Seven checks passed using actual `CompanionAgent`, `MetaClient` and atomic `LocalTaskStore`: seven Meta requests, 16.13 seconds total, fictional data. See [live evidence](shared-swift-live-evidence.md) |
-| Earlier model access | Six direct Mac API checks passed for ordinary replies, fictional checklist tool/follow-ups, Muse Image generation and reference editing. See [access evidence](meta-access-evidence.md); that fixture writer was separate from the later real Swift agent check |
-| Native simulator build | Both normally signed simulator targets built after the speech-authorization repair and again after the simulator-only microphone fallback gate. Later source edits still need rebuilding; final source commit/publication remains pending |
-| Native model UI | iPhone simulator produced an ordinary typed reply without a note, then created and opened “Win the Meta Hackathon.” A typed request in the actual Watch simulator UI crossed Watch Connectivity to the iPhone Meta agent/store and returned a displayed Watch result; durable phone JSON contained exactly milk, eggs and bread alongside the original hackathon note. This proves a paired-simulator typed path, not voice or physical-device behavior |
-| Keychain | The normally signed iPhone simulator saved the key and retained it through reinstall/relaunch. Unsigned installation failed key storage. Mac development credentials do not automatically synchronize to a physical phone or Watch |
-| Character | Approved default 3D lion and blue-lion icon are bundled with provenance. Native custom-generation, local Vision/edge preparation, manifest/transfer and procedural-motion source exist. Full custom creation/transfer on the real app and final icon/device acceptance remain pending |
-| UI | Production native screens were inspected in simulators, including default companion, real phone note creation/opening and real typed Watch request/result. Exact-note typed milk-to-oat-milk correction and two close/reopen attempts of Update this note passed. Full light/dark/accessibility and physical touch/scroll checks remain in progress |
-| Speech and paired transport | Typed Watch command/result and synthetic 16/24/44.1/48 kHz conversion checks passed. The Swift 6 speech-permission callback repair reached Listening in the real UI. The tested iOS 26 simulator then aborted in its CoreAudio microphone service, including after an explicit input-route retry. A simulator-only default microphone gate now gives a tested graceful typed fallback; live voice, Watch audio and interrupted/background/locked execution have not passed |
-| Physical SDK compile | Generic iOS-device SDK plus embedded Watch SDK compiled successfully with signing disabled. This is a compile-only check, not a signed device install, runtime or physical acceptance |
-| Physical iPhone/Watch | Exact available devices/OS, signing and full real command-to-saved-result flow are not accepted. Reported OS versions are not device-test evidence |
-| Installable app / TestFlight | Not released |
-| Demo video / hackathon submission | Not produced / not submitted |
+| Repository | Public [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), Apache-2.0. Unauthenticated access and a fresh mirror of all published branches were verified on 4 November. A fresh unauthenticated public clone of native source `75c6c3f` built both Simulator targets successfully. Source, assets and generated project are included without a private dependency |
+| Shared Swift domain/agent | 15 current-source tests pass on macOS with Xcode 27 / Swift 6.4: atomic persistence/Undo, strict scope, non-mutating chat, twenty additions despite history trimming, retry/restart recovery, protected idle expiry and truthful failed writes |
+| Shared Swift live Meta | Seven production Swift agent/store checks passed: seven Meta requests, 16.13 seconds, fictional data. See [live evidence](shared-swift-live-evidence.md) |
+| Earlier model access | Six direct Mac API checks passed for ordinary replies, fictional checklist actions, Muse Image generation and reference editing. The fixture writer was separate from the later production Swift agent check. See [access evidence](meta-access-evidence.md) |
+| Native build | Both normally signed simulator targets build from the published native source. Generic device SDK compilation also passed at the first native checkpoint with signing disabled; that was not a signed device install |
+| Native model UI | An ordinary typed phone reply created no note. The phone created/opened “Win the Meta Hackathon.” A typed request in the actual Watch UI reached the phone Meta agent/store and returned a Watch result; durable phone JSON contained exactly milk, eggs and bread plus the hackathon note |
+| Exact-note edits and Undo | Real typed Update this note calls replaced milk with oat milk, then checked off eggs and bread. The note detail showed the saved changes. Its Undo restored the completion values while retaining oat milk. Closing/reopening the compact panel twice remained usable |
+| Keychain | A normally signed phone simulator saved the key and retained it through reinstall/relaunch. Unsigned installation failed key storage. Mac credentials do not automatically synchronize to physical devices |
+| Custom companion | The phone UI made a real `muse-image-1.0` request, prepared a PNG locally and displayed it. Both simulator caches contain the same selected manifest and valid PNG hash; actual phone/Watch displays were inspected. The bundled default and app icon remain separate assets |
+| Character transport | Six current-source checks pass for reordered/duplicate chunks, delayed selection, reset/stale delivery, newer selection, corrupted hash and conflicting/oversized metadata. Foreground chunks supplement background file transfer. Physical/reconnect/background reliability remains unaccepted |
+| Speech | Four synthetic 16/24/44.1/48 kHz conversion cases pass. The speech-permission callback repair reached Listening. The tested iOS 26 Simulator then aborted in CoreAudio microphone capture, including after an input-route retry. Simulator capture is now disabled by default with a tested typed fallback |
+| Physical voice | Microphone, recognition, Watch audio, origin-device speaker, unavailable/locked/background and interrupted execution have not passed on paired hardware. Both physical devices were unavailable at the last discovery check |
+| Accessibility/appearance | Native layouts and custom artwork were inspected in simulators. Reduce Motion and long-text behavior exist in source. Full light/dark, VoiceOver, Dynamic Type and physical touch/scroll acceptance remains in progress |
+| Installable release | No App Store or TestFlight release |
+| Demo / submission | Three-minute video not produced; hackathon entry not submitted |
 
-## What the checks establish
+## What the tests establish
 
-The local tests use fictional data. They verify task mutations, transaction failures, revision/Undo safeguards, ambiguous exact titles, strict selected-note scope, repeated operations, durable receipts and the temporary agent-session contract. They do not prove semantic model reliability, speech, transport or physical-device behavior.
+The local tests use fictional data and verify mutations, failed transactions, revisions/Undo, exact-note scope, repeated operations, durable receipts and temporary session rules. They do not prove semantic model reliability, speech or physical transport.
 
-The live shared Swift check verifies actual Meta tool selection through the production Swift store: ordinary chat creates no note; one grocery checklist is created; request replay does not duplicate it; milk changes to oat milk; eggs and bread are checked off; reopening matches saved state; local Undo restores the prior completion values. It does not test native UI, microphone, Watch or custom artwork creation.
+The live production Swift check verifies actual Meta tool selection: ordinary chat creates no note, a grocery checklist is saved, request replay does not duplicate it, milk becomes oat milk, eggs/bread are completed, reopened state matches, and local Undo restores completion values. This was separate from the subsequent native UI interactions.
 
-The first native persistence adapter is atomic JSON owned by one actor. There is no SwiftData integration claim. The default artwork/icon and local native motion are separate from a successful in-app Muse Image pipeline.
+The first persistence adapter is atomic JSON owned by one actor. There is no SwiftData integration claim. Conversation is RAM-only; notes and operational retry/Undo receipts are durable.
 
-## Remaining release record
+## Native custom companion record
 
-Before release, preserve the exact source commit, build/test results, model IDs, device/OS and signing configuration, measured latency, full command-to-saved-result recordings, artwork provenance and limitations. Verify note persistence after reopening, duplicate/lost delivery, pending results, invalid key, speech permissions, no network, background expiration, interrupted playback, failed character transfer and accessibility on the supported physical setup. Confirm that a fresh public clone builds without private files.
+The in-app prompt described a little lion with black Wayfarer sunglasses, soft golden fur and a friendly confident smile. Muse Image returned artwork, which the phone prepared and cached locally. Its name is Ava; selecting it did not change the blue-lion app icon.
 
-Inspect the final three-minute video and public repository from a logged-out browser before submission. A compiled app, public source, captured simulator or model-access check does not by itself establish a physical-device release or submitted entry.
+- Selected manifest: `448F5C6E-9899-460A-9120-3AF4E38D2837`
+- Prepared PNG: 205,508 bytes
+- SHA-256: `775564fe68e4dccd76a01404243d8c4cf9d227154987044be1ef99d04c21add9`
+- Phone and Watch manifests and PNG hashes matched after foreground transfer.
+- Motion is local SwiftUI breathing/tilt/state motion from one image, not generated video, expression frames or lip synchronization.
 
+[Phone custom companion](images/phone-custom-companion.png) and [Watch custom companion](images/watch-custom-companion.png) are native Ready-screen captures from the installed published native source. The [capture manifest](images/capture-manifest.json) records their hashes, device/runtime and source commit. These captures do not show a saved action or prove microphone use. [Earlier phone saved-note capture](images/phone-live-note.png) and [bundled Watch Ready capture](images/watch-native-ready.png) predate the final native source checkpoint; neither is physical-device evidence.
 
-## Current-source paired-simulator checkpoint
+## Voice limitation and remaining gates
 
-The app-repository source built both normally signed simulator targets after the Swift 6 speech-authorization callback repair. The fifteen core checks and four synthetic audio-rate cases passed. The synthetic cases verify duration/bandwidth, amplitude and frequency after conversion; they do not prove microphone capture or live recognition.
+Experimental Simulator capture requires `AVATODO_ENABLE_SIMULATOR_MICROPHONE=1`. That path has not passed live voice on this host; physical capture is unchanged. Only finalized speech may trigger tools, and incomplete/interrupted audio must not execute a partial request. A missing reply does not prove nothing was saved.
 
-The actual iPhone UI returned a normal typed Meta reply without making a note, then created and opened **Win the Meta Hackathon**. Its Keychain key survived reinstall/relaunch. In the actual Watch UI, a typed request to make a grocery list with milk, eggs and bread was delivered over Watch Connectivity to the iPhone agent, interpreted through Meta, committed to local storage and returned as a Watch result. Readback of the phone's durable JSON found those exact three grocery items and the existing hackathon note.
+Before a device release, record exact signed source/build, device/OS and measured latency; verify full command-to-saved-result recordings, persistence after reopening, lost/duplicate delivery, invalid key, no network, permission denial, background expiration, locked/force-quit phone, interrupted playback and failed character transfer. The current native source has built from a fresh public clone; repeat that check if release source changes. None of the build, typed Simulator or model-access evidence substitutes for those hardware checks.
 
-[Phone simulator after the real saved-note request](images/phone-live-note.png). [Watch native Ready screen](images/watch-native-ready.png) shows only the bundled companion and Talk control; it is not a saved-result capture. The typed Watch result was observed during interaction and checked against durable phone JSON, but no final Watch result image is recorded here. Neither image proves physical speech or a completed three-minute demo. Final source revision/publication remains to be recorded.
-
-The speech-authorization callback repair was retested and the UI reached Listening. The next failure was the simulator CoreAudio microphone-service abort, which persisted after choosing the MacBook microphone explicitly. The default simulator-only capture gate and graceful typed fallback were then exercised without that crash. Experimental simulator capture requires `AVATODO_ENABLE_SIMULATOR_MICROPHONE=1`; the physical capture implementation is unchanged. Complete recording/recognition/playback and unavailable/locked/background/interrupted behavior still require actual paired-hardware verification.
-
-
-Post-audio-gate build checkpoint: both normally signed simulator targets compiled successfully. A generic physical iOS-device build with embedded Watch SDK also passed with signing disabled; it was not installed or run on physical devices. A connected/unlocked iPhone is still needed for the hardware trial. Pending note-panel source adjustments must be rebuilt before final source evidence is sealed.
-
-Native note-scope follow-up: the actual Update this note action successfully changed milk to oat milk through a typed model request, and closing/reopening that compact panel twice remained usable. The subsequent eggs/bread completion request is not included as a passed result at this checkpoint.
+Inspect the final three-minute film and public repository from a logged-out browser before submission. Show only completed event work, label Simulator footage and any sped-up waits, and do not present an unimplemented flow as working.

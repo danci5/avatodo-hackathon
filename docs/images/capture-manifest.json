@@ -1,0 +1,30 @@
+{
+  "capturedOn": "2026-11-04",
+  "captures": [
+    {
+      "file": "phone-custom-companion.png",
+      "sourceCommit": "75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78",
+      "device": "iPhone 17 Pro Simulator",
+      "os": "iOS 26.0.1",
+      "capture": "Native simulator screenshot; custom companion Ready screen",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "f853d83c15af76db010595c498e9b732be33d4a03cfd4b7bcb0542150a54ea42"
+    },
+    {
+      "file": "watch-custom-companion.png",
+      "sourceCommit": "75c6c3f341284d0cea1cdc7ab68fba7f5aeb7d78",
+      "device": "Apple Watch Series 11 46mm Simulator",
+      "os": "watchOS 27.0",
+      "capture": "Native simulator screenshot; custom companion Ready screen",
+      "width": 416,
+      "height": 496,
+      "sha256": "8a37b7094d4a33c4f6b372e0cef934bc5e027420e0781e2c6c1d5b6f518de990"
+    }
+  ],
+  "limitations": [
+    "Simulator captures, not physical-device evidence.",
+    "Ready screens do not show a saved action or prove voice.",
+    "Custom artwork was generated in the iPhone app using Muse Image and transferred to Watch."
+  ]
+}

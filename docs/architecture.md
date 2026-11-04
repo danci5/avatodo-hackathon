@@ -52,11 +52,11 @@ The included 3D lion and blue-lion brand icon are bundled, so viewing the defaul
 
 Custom creation follows this source path:
 
-Description → direct Muse Image request → local foreground separation/crop/resize → validated PNG and manifest → cached native display → Watch file transfer.
+Description → direct Muse Image request → local foreground separation/crop/resize → validated PNG and manifest → cached native display → Watch transfer.
 
-Local preparation uses Apple Vision where available, with deterministic edge-connected white removal as a fallback. The manifest includes character identity, hash and provenance. Watch validates transferred bytes and retains the last valid artwork if a transfer fails. The same prepared image is animated locally through gentle breathing, tilt and phase-driven motion, respecting Reduce Motion.
+Local preparation uses Apple Vision where available, with deterministic edge-connected white removal as a fallback. The manifest includes character identity, hash and provenance. Background file transfer is supplemented by acknowledged 24 KB foreground chunks while reachable. Assembly is bounded to one image of at most 4 MB; Watch validates the final hash and current selected character before installation. Default resets and newer selections reject stale transfers. The same prepared image is animated locally through gentle breathing, tilt and phase-driven motion, respecting Reduce Motion.
 
-The current baseline uses one canonical image and procedural motion. Generated expression frames, lip synchronization and generated video are not implemented claims. Previous Mac image/reference-edit tests prove provider access, not the full in-app creation/transfer pipeline. That native pipeline still needs end-to-end acceptance.
+The current baseline uses one canonical image and procedural motion. Generated expression frames, lip synchronization and generated video are not implemented claims. A real in-app Muse Image request, local preparation and matching custom PNG caches/display on both paired simulators have passed. This does not establish physical-device or background-transfer reliability.
 
 ## Public boundaries
 
