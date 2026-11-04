@@ -1,13 +1,6 @@
-<p align="center">
-  <img src="App/Resources/Assets.xcassets/DefaultLion.imageset/lion.png" alt="The Avatodo lion wearing black sunglasses" width="180">
-</p>
+# Avatodo 🦁
 
-<h1 align="center">Avatodo 🦁</h1>
-
-<p align="center">
-  <strong>Your voice-driven agent for to-dos and checklists.</strong><br>
-  Runs locally on your iPhone. Powered by Meta models. With you on Apple Watch.
-</p>
+![Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch.](docs/images/avatodo-banner.png)
 
 <p align="center">
   <strong>iOS 26+ &nbsp; · &nbsp; watchOS 26+ &nbsp; · &nbsp; Meta Muse &nbsp; · &nbsp; Apache-2.0</strong>
