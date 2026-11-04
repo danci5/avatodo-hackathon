@@ -98,7 +98,7 @@ struct PhoneCompanion: View {
                 .padding(16).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(model.state.text.isEmpty ? Color.clear : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22))
                 Spacer(minLength: 0)
-                ConversationControls(phase: model.state.phase, showUndo: model.showUndo,
+                ConversationControls(phase: model.state.controlsPhase, showUndo: model.showUndo,
                     primary: { model.primary() }, undo: { model.undo() })
                     .disabled(!model.canControl)
             }
@@ -294,7 +294,7 @@ struct NoteConversationPanel: View {
                     .labelStyle(.iconOnly).buttonStyle(.glass).buttonBorderShape(.circle)
             }
             ConversationText(text: model.state.text, live: model.state.phase == .listening, compact: true)
-            ConversationControls(phase: model.state.phase, showUndo: model.showUndo, height: 48,
+            ConversationControls(phase: model.state.controlsPhase, showUndo: model.showUndo, height: 48,
                 primary: { model.primary(scope: id) }, undo: { model.undo() })
                 .disabled(!model.canControl)
         }

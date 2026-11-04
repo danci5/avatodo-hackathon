@@ -130,3 +130,7 @@ For current test scope and outstanding gates, see [release evidence](release-evi
 In iPhone Settings, tap **About → Reasoning** and choose **Muse Spark** (default) or **Muse Wonder**. The choice is saved locally and applies to both phone and paired Watch requests. Change it between replies; it does not clear temporary conversation or active note identity. Each complete tool loop keeps one model. Check connection tests the selected model against the catalog; unavailable access is reported without silently substituting another model. Artwork still uses Muse Image.
 
 The live production Swift Wonder check passed seven checks with fictional groceries: ordinary reply without a note, checklist creation, duplicate-request recovery, scoped correction, checking off two items, persistence readback and Undo. This is Mac shared-agent evidence, not physical phone or Watch inference evidence.
+
+## Talk startup
+
+The primary control moves directly from Talk to Done during connection/microphone setup and stays Done while listening. Connecting or Preparing microphone describes setup; Listening begins after capture is ready. Pressing Done during setup ends the attempt without an agent request. Cancel is reserved for processing a submitted request. A late Watch Listening state cannot restart a recording stopped during setup.
