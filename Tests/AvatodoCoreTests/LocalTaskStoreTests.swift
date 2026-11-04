@@ -36,6 +36,7 @@ private func expectError(_ expected: TaskStoreError, store: LocalTaskStore, requ
     #expect(receipt.after?.items.first?.id == milk.id)
 
     let reopened = try LocalTaskStore(persistence: file.persistence)
+    #expect(await reopened.undoableReceiptID(for: listID) == receipt.id)
     let retry = try await reopened.perform(complete)
     #expect(retry == receipt)
     let undo = try await reopened.perform(.init(action: .undo(receiptID: complete.id)))
@@ -45,6 +46,7 @@ private func expectError(_ expected: TaskStoreError, store: LocalTaskStore, requ
     let reopenedAgain = try LocalTaskStore(persistence: file.persistence)
     let saved = try await reopenedAgain.note(id: listID)
     #expect(saved == undo.after)
+    #expect(await reopenedAgain.undoableReceiptID(for: listID) == nil)
 }
 
 @Test func invalidMultiItemChangeIsAtomicAndCanBeRetriedCorrectly() async throws {

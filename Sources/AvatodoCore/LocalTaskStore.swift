@@ -7,8 +7,8 @@ public protocol TaskPersistence: Sendable {
     func save(_ snapshot: TaskSnapshot) throws
 }
 
-/// A dependency-free durable adapter for development and local integration.
-/// Only one LocalTaskStore may own a URL. The app's SwiftData adapter is planned.
+/// A dependency-free atomic snapshot adapter. Only one LocalTaskStore may own a URL.
+/// Native integration uses one actor for notes, revisions and retry receipts.
 public struct JSONFilePersistence: TaskPersistence {
     public let url: URL
 
@@ -62,7 +62,21 @@ public actor LocalTaskStore {
         return matches[0]
     }
 
+    public func receipt(id: UUID) -> MutationReceipt? { snapshot.receipts[id] }
+
+    /// Returns only a change whose revision still matches the current note.
+    /// This restores note-specific Undo availability after restarting the app.
+    public func undoableReceiptID(for noteID: UUID) -> UUID? {
+        snapshot.receipts.values.first { receipt in
+            guard receipt.noteID == noteID,
+                  receipt.committedRevision == snapshot.revisions[noteID] else { return false }
+            if case .undo = receipt.request.action { return false }
+            return true
+        }?.id
+    }
+
     public func perform(_ request: MutationRequest) throws -> MutationReceipt {
+        try Task.checkCancellation()
         // Work on a copy: validation and failed storage cannot leak partial state.
         var candidate = snapshot
         let receipt = try TaskReducer.apply(request, to: &candidate)

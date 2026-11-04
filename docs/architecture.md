@@ -1,50 +1,63 @@
 # First-release architecture
 
-Status: implementation contract; device behavior remains to be tested.
+The agent executes inside the iPhone app. Meta supplies remote language reasoning and image generation through direct HTTPS calls; Avatodo runs no application server.
 
 ## Responsibilities
 
 | Layer | Owns |
 |---|---|
-| iPhone app | Companion setup, voice/text input, local agent loop, notes/checklists, provider credentials and animation preparation |
-| Watch app | Companion presentation, bounded push-to-talk, captions, spoken replies and a small cached view of current results |
-| Local task domain | Typed create/read/update/delete/complete/undo actions, stable IDs, revision checks and retry receipts |
-| Meta language adapter | Remote interpretation and tool selection; no authority to claim a write succeeded |
-| Muse Image adapter | Direct remote generation and reference-based image edits |
-| Companion runtime | Cached expressions and local motion for idle/listening/thinking/speaking/success |
-| Paired-device transport | Bounded commands, audio where needed, truthful status, note snapshots and versioned character packages |
+| iPhone app | Companion setup, voice/text input, local agent loop, notes, Keychain credentials and image preparation |
+| Watch app | Same companion, push-to-talk, transient captions, local speech playback and cached character artwork |
+| Local task store | Typed mutations, stable note/item IDs, revision checks, atomic snapshots and retry/Undo receipts |
+| CompanionAgent | Bounded tool loop, temporary multi-turn context, note selection, strict note scope and truthful outcomes |
+| MetaClient | Direct `muse-spark-1.3` language/tool requests and `muse-image-1.0` artwork requests |
+| Apple speech adapters | iPhone recognition and active-device speech synthesis |
+| Watch Connectivity | Bounded commands/audio, ordered transient state and validated character files; no API key |
+| SwiftUI companion runtime | Cached artwork with local phase-driven motion and reduced-motion support |
 
-The iPhone is the source of truth. The intended app persistence adapter is SwiftData. A pure Swift domain package should keep model/provider code and UI out of domain operations. Transfer only needed state to the paired Watch; never the provider key.
+## Durable notes and temporary conversation
 
-## Speech and connectivity
+One `LocalTaskStore` actor owns the iPhone's atomic JSON snapshot of notes, revisions and operational mutation receipts. This is the native app's first persistence adapter; there is no separate SwiftData store. A candidate mutation is validated and written before the in-memory store publishes success. Replaying a mutation ID returns its original receipt; conflicting reuse and stale revisions fail. Receipts include before/after note values for Undo and interrupted-request recovery, not conversational transcripts. One store owns each file; multiple processes must not write the same snapshot.
 
-Start with tap-to-talk, an explicit stop control and visible transcription. Evaluate Apple speech recognition on the actual phone/locale and system speech synthesis on the active device. On-device speech availability must be tested rather than assumed. Watch audio may be relayed to iPhone for transcription.
+Conversation exists only in RAM. The agent retains at most six complete exchanges, keeping tool requests with their results. Active note identity is separate, so evicting old words does not impose a six-item or six-turn limit. Notes are the lasting semantic context. There is no saved chat, compaction summary or inferred profile memory.
 
-The intended Watch listening state shows the latest two or three lines of partial transcription, with a smaller companion. Partial text may revise; only a finalized utterance triggers task actions. Apple Speech supports partial results, but the installed Watch SDK does not contain Speech.framework. Evaluate short bounded audio chunks to the phone recognizer and partial-text updates back to Watch. Do not represent post-recording transcription as live transcription. [Apple speech request documentation](https://developer.apple.com/documentation/speech/sfspeechrecognitionrequest/shouldreportpartialresults)
+The session expires after five idle minutes, measured after reply presentation or speech completion/stop. Recording, tool execution and reply presentation protect active work from expiry. Start fresh clears temporary words and note references while preserving notes and valid note-side Undo. The Watch receives transient deadlines so reconnecting does not revive expired captions or Undo.
 
-The first hardware trial must establish what works with the paired phone foregrounded, backgrounded, locked or unreachable. Do not promise autonomous Watch operation until measured. A queued request is pending, not saved. Offline notes remain readable; remote reasoning/image requests need connectivity.
-
-Normal use should leave the iPhone in a pocket. An active Watch app can wake its reachable paired iOS app in the background through Watch Connectivity; this is an execution opportunity, not an always-running agent service. Acknowledge receipt promptly, persist request identity, and report completion only after a durable task result. Test the complete transcription/model/save/reply path, execution expiry and lost replies on hardware without an attached debugger. [Apple Watch Connectivity documentation](https://developer.apple.com/documentation/watchconnectivity/wcsession/sendmessage(_:replyhandler:errorhandler:))
-
-Separate disconnected-before-send, result-pending, setup-required and completed states. A timeout or lost reply does not prove the list is unchanged: check the existing request receipt before retrying. Ask to open the phone app for specific setup/recovery, not as the default condition for every Watch conversation. Keychain and data protection must support the tested locked-phone behavior; evaluate a device-only after-first-unlock credential policy and handle the first unlock after restart explicitly. [Apple Keychain accessibility](https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlockthisdeviceonly)
+General requests can search titles, bodies and checklist labels, then read the current note and revision. Ambiguous targets should be clarified. **Update this note** supplies the exact note ID and enforces that scope; the agent cannot silently write another note or create a different one from that panel.
 
 ## Model action loop
 
-1. Capture text and relevant active-note context.
-2. Send a bounded request to the configured Meta language model.
-3. Validate returned tool names, arguments, IDs and expected revision.
-4. Apply local operations transactionally, using a mutation identifier for retry safety.
-5. Return actual outcomes to the agent and render/speak a truthful reply.
-6. Update the foreground Watch from committed state.
+1. Finalize input and obtain relevant current note context.
+2. Call Meta directly using the key read from iPhone Keychain.
+3. Validate tool names, arguments, real IDs, scope and expected revisions.
+4. Commit typed operations through the local store using retry-safe identities.
+5. Send actual tool outcomes back to the model and show/speak the result.
+6. Refresh notes and the paired Watch from committed state.
 
-Ambiguous targets require clarification. Deletions need a user-visible confirmation or a recoverable undo path. No external execution, purchase or message sending is part of this example agent.
+Ordinary replies return without a write or saved-note card. A failed tool write cannot be presented as saved. Cancel stops outstanding capture or work; it does not reverse an operation that already committed. **Stop speaking stops playback only.** Undo is a separate validated mutation, available only while the affected revision still permits reversal.
 
-## Character creation
+## Speech and paired-device behavior
 
-Voice/text description → direct Muse Image request → canonical artwork and a few consistent expression images → local crop/alignment/validation → versioned cached package → Watch transfer.
+Both devices use explicit tap-to-talk and Done. iPhone recognition reports partial text; only a finalized utterance is submitted to the agent. Watch audio is relayed as bounded, sequenced mono 16 kHz Int16 PCM to the iPhone recognizer, and partial captions return to Watch. Missing/out-of-order audio is buffered within limits; incomplete capture must not execute a partial request. Audio buffers and captions are not written to disk.
 
-Simple breathing, tilting, bouncing and expression changes create motion. Muse Image returns images, not a complete Watch animation engine. Keep an opaque background fallback if masking fails. Preserve the last valid character on errors. The reference demo character is a little lion wearing Ray-Ban glasses; generated output must be validated before the demo.
+Capture is bounded to 60 seconds on iPhone and 30 seconds on Watch. A recording limit ends capture with a retry message rather than automatically committing the utterance. Apple recognition runs on device where the current recognizer supports it; locale/device availability and any Apple speech-service fallback need testing. Speech playback uses system voices on the conversation's originating device, without duplicate iPhone playback for a Watch-originated reply.
+
+Watch Connectivity and a finite iPhone background execution window support the relay. They do not make the phone an always-running service or the Watch a standalone agent. Foreground, background, locked, first-unlock-after-restart, force-quit, unreachable-phone and interruption cases require physical-device verification without a debugger. Those cases are not yet accepted.
+
+A timeout or missing reply does not prove the notes are unchanged. Request identities and committed receipts support reconciliation; the UI should direct the person to check saved state when completion is uncertain. Keys use device-only after-first-unlock Keychain accessibility. Notes use an app-owned protected Application Support folder. Neither setting alone proves locked-phone operation.
+
+## Companion creation and motion
+
+The included 3D lion and blue-lion brand icon are bundled, so viewing the default companion needs no image request. People can keep that companion or create a custom one without changing the app's brand icon.
+
+Custom creation follows this source path:
+
+Description → direct Muse Image request → local foreground separation/crop/resize → validated PNG and manifest → cached native display → Watch file transfer.
+
+Local preparation uses Apple Vision where available, with deterministic edge-connected white removal as a fallback. The manifest includes character identity, hash and provenance. Watch validates transferred bytes and retains the last valid artwork if a transfer fails. The same prepared image is animated locally through gentle breathing, tilt and phase-driven motion, respecting Reduce Motion.
+
+The current baseline uses one canonical image and procedural motion. Generated expression frames, lip synchronization and generated video are not implemented claims. Previous Mac image/reference-edit tests prove provider access, not the full in-app creation/transfer pipeline. That native pipeline still needs end-to-end acceptance.
 
 ## Public boundaries
 
-No Avatodo-hosted backend, mandatory sign-in, remote MCP service or shared developer API key. Provider/model IDs are configured only after account access is verified. Keep documentation clear about API usage costs and provider data handling.
+The public repository includes native targets, shared Swift code, artwork/provenance and setup files. It has no private build dependency, hosted agent/MCP endpoint, database service, mandatory login or shared developer key. Relevant note data and prompts leave the device for Meta inference; local non-retention does not promise zero retention by Meta or Apple. See [release evidence](release-evidence.md) for what has actually been tested.

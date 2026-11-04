@@ -1,0 +1,72 @@
+name: Avatodo
+options:
+  deploymentTarget:
+    iOS: '26.0'
+    watchOS: '26.0'
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    SWIFT_STRICT_CONCURRENCY: complete
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+packages:
+  AvatodoCore:
+    path: .
+targets:
+  Avatodo:
+    type: application
+    platform: iOS
+    sources:
+      - App/iOS
+      - App/Shared
+      - App/Resources
+    dependencies:
+      - package: AvatodoCore
+      - target: AvatodoWatch
+        embed: true
+        copy:
+          destination: productsDirectory
+          subpath: '$(CONTENTS_FOLDER_PATH)/Watch'
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.avatodo
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Avatodo
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Talk to your companion to create and update your notes.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Turn your speech into text for your companion.
+        TARGETED_DEVICE_FAMILY: '1'
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+  AvatodoWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - App/Watch
+      - App/Shared
+      - App/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.avatodo.watch
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Avatodo
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: app.avatodo
+        INFOPLIST_KEY_WKWatchOnly: NO
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Talk to your companion through your paired iPhone.
+        TARGETED_DEVICE_FAMILY: '4'
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+schemes:
+  Avatodo:
+    build:
+      targets:
+        Avatodo: all
+    run:
+      config: Debug
+  AvatodoWatch:
+    build:
+      targets:
+        AvatodoWatch: all

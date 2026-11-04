@@ -1,0 +1,21 @@
+{
+  "default_companion": {
+    "model": "muse-image-1.0",
+    "created": "2026-11-04",
+    "description": "Approved original stylized 3D golden lion with black Wayfarer-style sunglasses",
+    "preparation": "Local Apple Vision foreground-instance mask, transparent-edge cleanup, crop and resize using Core Image/Core Graphics; no additional image generation",
+    "prepared_dimensions": [
+      531,
+      653
+    ],
+    "prepared_sha256": "8f238403d1256b12553089ec99317e9fc4a0195ad38a23dd4eb961928e7a83b7"
+  },
+  "app_icon": {
+    "generator": "Codex built-in image generation",
+    "created": "2026-11-04",
+    "reference": "The approved Muse Image lion",
+    "selected": "Icon A, lion on blue",
+    "preparation": "Local resize to 1024px"
+  },
+  "license_note": "Generated artwork remains subject to applicable generation-provider terms; not third-party brand artwork. No affiliation with eyewear or platform brands."
+}
