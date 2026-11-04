@@ -33,6 +33,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.avatodo
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Avatodo
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Talk to your companion to create and update your notes.
@@ -52,6 +53,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.avatodo.watch
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Avatodo
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: app.avatodo
         INFOPLIST_KEY_WKWatchOnly: NO
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Talk to your companion through your paired iPhone.

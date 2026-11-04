@@ -34,6 +34,7 @@ struct CompanionViewState: Codable, Sendable, Equatable {
     var replyDevice = "phone"
     var requestID: UUID?
     var hasModelKey = false
+    var hasDataSharingConsent: Bool?
     var speechReady = false
     var characterID: UUID?
     var characterName = "Avatodo"

@@ -13,11 +13,14 @@ import AvatodoCore
     var setupError: String?
     var alert: String?
     var canControl: Bool { state.phase.isIdle || !watchOrigin }
+    var metaDataSharingAllowed: Bool { state.hasDataSharingConsent == true }
     var generating = false
     var generationStage = ""
     var speaksReplies = UserDefaults.standard.object(forKey: "speaksReplies") as? Bool ?? true {
         didSet { UserDefaults.standard.set(speaksReplies, forKey: "speaksReplies") }
     }
+    private let consent = MetaDataSharingConsent()
+    private var characterRequest: Task<Data, Error>?
     private var store: LocalTaskStore?
     private var agent: CompanionAgent?
     private let microphone = MicrophoneCapture()
@@ -45,6 +48,7 @@ import AvatodoCore
     private var lastReceiptByNote: [UUID: UUID] = [:]
 
     init() {
+        state.hasDataSharingConsent = consent.isGranted
         if let saved = CharacterStore.load() {
             characterData = saved.0; characterManifest = saved.1
             state.characterID = saved.1.id; state.characterName = saved.1.name
@@ -68,6 +72,26 @@ import AvatodoCore
     func refreshKey() { state.hasModelKey = ((try? KeychainStore.load()) ?? nil) != nil; publish() }
     func saveKey(_ key: String) throws { try KeychainStore.save(key); refreshKey() }
     func removeKey() throws { try KeychainStore.remove(); refreshKey() }
+    func setMetaDataSharingAllowed(_ allowed: Bool) {
+        consent.setGranted(allowed)
+        state.hasDataSharingConsent = allowed
+        if !allowed {
+            characterRequest?.cancel()
+            voice.stop()
+            if work != nil || !state.phase.isIdle { cancel(message: MetaConsentError.revoked.localizedDescription) }
+            else { startFresh() }
+            Task { _ = await agent?.startFresh() }
+        }
+        publish()
+    }
+    private func requireConsent(fromWatch: Bool, id: UUID) -> Bool {
+        do { try consent.requirePermission(); return true }
+        catch {
+            state.replyDevice = fromWatch ? "watch" : "phone"; state.requestID = id
+            setPhase(.error, text: error.localizedDescription)
+            return false
+        }
+    }
     func note(_ id: UUID) -> Note? { notes.first { $0.id == id } }
     func refreshNotes() async {
         guard let store else { return }
@@ -97,6 +121,7 @@ import AvatodoCore
         guard state.phase.isIdle, work == nil else { if fromWatch { publish() }; return }
         if fromWatch, recentVoiceRequests.contains(id) || cancelledWatchRequests.contains(id) { publish(); return }
         guard agent != nil, setupError == nil else { return }
+        guard requireConsent(fromWatch: fromWatch, id: id) else { return }
         guard state.hasModelKey else { setPhase(.error, text: "Add your Meta API key in iPhone Settings first."); return }
         voice.stop(); confirmationTimer?.cancel(); replyTimer?.cancel(); undoTimer?.cancel(); idle?.cancel(); showUndo = false
         cancellationMessage = nil; state.resultIsMutation = false
@@ -149,6 +174,7 @@ import AvatodoCore
         guard state.phase.isIdle, work == nil else { if fromWatch { publish() }; return }
         if fromWatch, cancelledWatchRequests.contains(id) { publish(); return }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard requireConsent(fromWatch: fromWatch, id: id) else { return }
         scopedNoteID = scope; watchOrigin = fromWatch; requestID = id; state.requestID = id
         state.replyDevice = fromWatch ? "watch" : "phone"
         state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
@@ -185,12 +211,14 @@ import AvatodoCore
     }
     private func respond(_ text: String, id: UUID) async {
         do {
+            try consent.requirePermission()
             guard let agent, let key = try KeychainStore.load() else { throw MetaError.missingKey }
             setPhase(.thinking, caption: "Thinking…", text: text)
             _ = await agent.expireIfNeeded()
             await agent.setPresentingReply(true)
             let outcome = try await agent.respond(to: text, requestID: id, key: key, scopedTo: scopedNoteID)
             await refreshNotes()
+            guard consent.isGranted else { throw MetaConsentError.revoked }
             guard requestID == id else { return }
             state.resultIsMutation = !outcome.receipts.isEmpty
             state.text = outcome.reply; state.noteID = outcome.activeNoteID
@@ -216,6 +244,7 @@ import AvatodoCore
             } else { readyAfterReply() }
         } catch is CancellationError { await refreshNotes(); finishCancelled() }
         catch { await refreshNotes(); fail(error) }
+        if !consent.isGranted { _ = await agent?.startFresh() }
     }
     func stopSpeaking() {
         guard canControl, state.phase == .speaking else { return }
@@ -308,20 +337,26 @@ import AvatodoCore
     }
     func createCharacter(description: String, name: String) async {
         guard !generating, state.phase.isIdle, work == nil else { return }
+        do { try consent.requirePermission() } catch { alert = error.localizedDescription; return }
         generating = true; generationStage = "Creating with Muse Image…"
-        defer { generating = false }
+        defer { generating = false; characterRequest = nil }
         do {
             guard let key = try KeychainStore.load() else { throw MetaError.missingKey }
-            let original = try await MetaClient().generateCharacter(description: description, key: key)
+            let request = Task { try await MetaClient().generateCharacter(description: description, key: key) }
+            characterRequest = request
+            let original = try await request.value
+            try consent.requirePermission()
             generationStage = "Preparing your companion…"
             let prepared = try await Task.detached(priority: .userInitiated) { try CharacterStore.prepare(original) }.value
+            try consent.requirePermission()
             let manifest = CharacterManifest(id: UUID(), name: String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40)),
                 sha256: CharacterStore.digest(prepared), generatedAt: Date(), sourceModel: MetaClient.imageModel)
             try CharacterStore.save(prepared, manifest: manifest)
             characterData = prepared; characterManifest = manifest
             state.characterID = manifest.id; state.characterName = manifest.name.isEmpty ? "Avatodo" : manifest.name
             publish(); sendCharacter()
-        } catch { alert = error.localizedDescription }
+        } catch is CancellationError { alert = MetaConsentError.revoked.localizedDescription }
+        catch { alert = error.localizedDescription }
     }
     func useDefaultCharacter() {
         do {

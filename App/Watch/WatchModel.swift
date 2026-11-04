@@ -64,6 +64,7 @@ import WatchKit
     func begin() {
         guard state.phase.isIdle else { return }
         guard reachable else { unavailable(); return }
+        guard state.hasDataSharingConsent == true else { consentRequired(); return }
         voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
         let id = UUID(); localRequest = id; packetCount = 0; awaitingStart = true; awaitingStop = false
         state.requestID = id; state.replyDevice = "watch"
@@ -74,6 +75,7 @@ import WatchKit
     func submit(_ text: String) {
         guard state.phase.isIdle, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard reachable else { unavailable(); return }
+        guard state.hasDataSharingConsent == true else { consentRequired(); return }
         voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
         let id = UUID(); localRequest = id; awaitingStart = true; awaitingStop = false
         state.requestID = id; state.replyDevice = "watch"
@@ -205,6 +207,10 @@ import WatchKit
     }
     private func stopCapture() {
         capturing = false; microphone.stop(); microphoneTask?.cancel(); timeout?.cancel()
+    }
+    private func consentRequired() {
+        state.phase = .error; state.caption = "Review on iPhone"
+        state.text = "Open Avatodo Settings on iPhone and allow Meta data sharing before talking."
     }
     private func unavailable() {
         stopCapture(); awaitingStart = false; awaitingStop = false

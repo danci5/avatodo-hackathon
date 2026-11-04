@@ -285,6 +285,20 @@ struct SettingsScreen: View {
                     if model.state.hasModelKey { Button("Remove key", role: .destructive) { do { try model.removeKey(); message = "Key removed." } catch { message = error.localizedDescription } } }
                     if let message { Text(message).font(.footnote) }
                 } header: { Text("Meta connection") } footer: { Text("Requests go directly from this iPhone to Meta. Provider access and usage charges may apply. No Avatodo account or hosted server.") }
+                Section {
+                    Text("Meta receives your messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
+                    Text("Watch audio goes to your paired iPhone. Apple handles speech recognition, using its speech service when on-device recognition isn’t supported. Avatodo sends text, not raw microphone audio, to Meta.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    if model.metaDataSharingAllowed {
+                        Label("Allowed on this iPhone", systemImage: "checkmark.circle")
+                        Button("Turn off Meta requests") { model.setMetaDataSharingAllowed(false) }
+                    } else {
+                        Button("Allow Meta requests") { model.setMetaDataSharingAllowed(true) }
+                    }
+                    Link("Privacy policy", destination: URL(string: "https://avatodo.com/privacy.html")!)
+                } header: { Text("Data sharing with Meta") } footer: {
+                    Text("Your permission covers phone and Watch requests. You can turn it off here at any time. Saved notes remain in local storage; data already sent to Meta cannot be recalled by Avatodo. Meta’s privacy policy and terms also apply.")
+                }
                 Section("Voice") { Toggle("Speak replies", isOn: $model.speaksReplies) }
                 Section("Conversation") {
                     Button("Start fresh") { model.startFresh(); dismiss() }.disabled(!model.state.phase.isIdle)
@@ -295,6 +309,7 @@ struct SettingsScreen: View {
                     LabeledContent("Reasoning", value: "Muse Spark")
                     LabeledContent("Artwork", value: "Muse Image")
                     Text("Speech uses Apple recognition on this iPhone, on device when available. Some languages may use Apple’s speech service. Watch audio is relayed to this iPhone.").font(.footnote).foregroundStyle(.secondary)
+                    Link("Privacy policy", destination: URL(string: "https://avatodo.com/privacy.html")!)
                     Link("Source code", destination: URL(string: "https://github.com/danci5/avatodo-hackathon")!)
                 }
             }.navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
@@ -319,6 +334,7 @@ struct CharacterScreen: View {
                     TextField("Describe your companion", text: $description, axis: .vertical).lineLimit(4...8)
                     Button("Create with Muse Image") { Task { await model.createCharacter(description: description, name: name) } }
                         .disabled(model.generating || !model.state.hasModelKey || description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if !model.metaDataSharingAllowed { Text("Allow Meta data sharing in Settings before creating a companion.").font(.footnote).foregroundStyle(.secondary) }
                     if model.generating { HStack { ProgressView(); Text(model.generationStage).font(.subheadline) } }
                 } header: { Text("Create your own") } footer: { Text("Muse creates the artwork. Avatodo prepares it and adds gentle native animation locally, then sends the same companion to your Watch. Generation uses your Meta key.") }
             }.navigationTitle("Your companion").navigationBarTitleDisplayMode(.inline)

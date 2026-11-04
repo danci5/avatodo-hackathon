@@ -40,7 +40,10 @@ For an intentional audio experiment, set `AVATODO_ENABLE_SIMULATOR_MICROPHONE=1`
 1. Open the iPhone app and its **Settings** screen.
 2. Enter your own Meta API key and choose **Save key**.
 3. The app stores the key in iPhone Keychain. Settings supports replacement/removal without displaying the saved key.
-4. Return to the companion and Talk, or choose **Type a message** from the conversation menu.
+4. Review **Data sharing with Meta** and choose **Allow Meta requests**. This starts off; adding a key alone does not grant permission.
+5. Return to the companion and Talk, or choose **Type a message** from the conversation menu.
+
+Permission covers both phone and Watch requests. Meta receives messages/transcriptions, temporary recent conversation and note context (including note titles/details and notes read or updated by the agent); companion creation sends its description to Muse Image. Raw Watch audio relays to iPhone for Apple speech recognition, not to Meta. **Turn off Meta requests** in Settings revokes permission and cancels outstanding model work. Already committed note changes remain saved. Manual Notes editing and the default companion remain usable without model permission.
 
 The Watch never receives the key. A development key saved in macOS Keychain does not automatically synchronize to an iPhone. See [development setup](meta-development-setup.md) for the explicit Debug-simulator-only import helper; physical and release builds do not contain that import route.
 
