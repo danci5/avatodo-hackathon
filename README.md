@@ -2,8 +2,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/avatodo-banner-light.png">
-    <img src="docs/images/avatodo-banner-dark.png" alt="Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch." width="960">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/danci5/avatodo-hackathon/raw/refs/heads/main/docs/images/avatodo-banner-light.png">
+    <img src="https://github.com/danci5/avatodo-hackathon/raw/refs/heads/main/docs/images/avatodo-banner-dark.png" alt="Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch." width="960">
   </picture>
 </p>
 
