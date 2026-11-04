@@ -134,3 +134,9 @@ The live production Swift Wonder check passed seven checks with fictional grocer
 ## Talk startup
 
 The primary control moves directly from Talk to Done during connection/microphone setup and stays Done while listening. Connecting or Preparing microphone describes setup; Listening begins after capture is ready. Pressing Done during setup ends the attempt without an agent request. Cancel is reserved for processing a submitted request. A late Watch Listening state cannot restart a recording stopped during setup.
+
+## Drive format and voice preview (build 9)
+
+Settings → Google Drive → File format offers Markdown (.md) or Plain text (.txt). The initial choice is Markdown. Selecting another format updates existing copies in place, including their names and media types. The same note/file IDs remain; no second file or imported cloud edit is created. Plain text is the mobile Drive compatibility option and keeps ordinary text/checklist marks. The owner’s real Markdown upload and web preview are confirmed; mobile TXT preview and Muse access still require device/account acceptance.
+
+Preview iPhone voice sits immediately beneath Reply voice and above Watch reply voice. Choosing an installed Watch voice uses local synthesis, avoiding phone audio generation/transfer. The iPhone-voice option remains available; preferences are not migrated or overridden. Relative playback latency has not been measured on hardware.

@@ -1,10 +1,18 @@
 # Release evidence
 
-## Build 8 startup-control candidate, 4 November
+## Build 9 candidate, 5 November
+
+Adds a Drive File format setting with Markdown (.md) as the initial choice and optional plain text (.txt) for mobile Drive compatibility. Format changes patch the existing file ID even when the note revision is unchanged, keeping one file per note. Plain text omits the human-unfriendly export envelope; IDs/revisions remain in app-owned Drive metadata. There is no Open-in-Avatodo reader or new Google permission.
+
+Moves Preview iPhone voice directly below the iPhone Reply voice choice, above Watch reply voice. Existing Watch voice choices remain intact. Local Watch synthesis avoids the phone render/transfer step; no measured hardware latency claim is made. Build 8’s Talk/Done startup correction is retained.
+
+52 core tests pass, including ten Drive cases with format conversion in both directions, no duplicate file creation and unchanged-format skipping. Both native Simulator targets build. Native Settings shows the revised preview order and successfully selects/persists the plain-text choice. Real personal-account Markdown upload and its web preview were confirmed; the owner’s Drive iPhone viewer rejects Markdown. Actual TXT preview, remote update acceptance, Muse handoff and physical startup-fix acceptance remain pending. Build 9 is not yet uploaded at this source checkpoint.
+
+## Historical TestFlight checkpoint, 4 November, build 8
 
 A user-reported Talk → Cancel → Done flash came from treating microphone/Watch connection setup as an agent-thinking state. Setup now presents Done immediately while retaining the honest Connecting/Preparing microphone caption. Actual agent requests still present Cancel. Done during setup cancels without submitting input; late busy Watch states cannot restart capture after this stop. The phone changes to Listening only after its microphone startup succeeds. The added optional presentation field remains compatible with older paired state messages.
 
-Both native Simulator targets build and 49 core tests pass; existing voice/wire and consent checks pass. A recorded native Watch startup shows Connecting with Done and no intermediate Cancel. The Simulator's intentionally disabled microphone then produces its expected capture-unavailable message; this is not physical speech acceptance. Build 8 is not yet uploaded at this source checkpoint.
+Both native Simulator targets build and 49 core tests pass; existing voice/wire and consent checks pass. A recorded native Watch startup shows Connecting with Done and no intermediate Cancel. The Simulator's intentionally disabled microphone then produces its expected capture-unavailable message; this is not physical speech acceptance. Build 8 is uploaded and fully processed as Ready to Submit, with a 90-day window and assignment to Avatodo Internal (one invited owner). What to Test was saved and read back. Clean signed archive source is `2cea56ca93a29c2307d8a94ed2736fdd61b1ea64`, private-pushed and verified. Upload completed at 22:58:09 UTC / 23:58 CET on 4 November. Apple build ID: `7e94b245-5470-4ab5-a7c1-c9a63e2954df`. Separate local export: 13,998,771 bytes, SHA-256 `18dc11d5bf70049e208eadcba88f1bdb85a603c6e5ddff03d144d55391c87bbc`. Physical acceptance of the startup fix is pending.
 
 ## Historical TestFlight checkpoint, 4 November, build 7
 

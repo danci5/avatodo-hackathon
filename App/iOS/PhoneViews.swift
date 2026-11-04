@@ -416,6 +416,11 @@ struct SettingsScreen: View {
                             }
                         }
                     }.pickerStyle(.navigationLink)
+                    Button(model.previewingVoice ? "Stop preview" : "Preview iPhone voice") {
+                        if model.previewingVoice { model.stopVoicePreview() }
+                        else { model.previewVoice() }
+                    }.disabled(!model.previewingVoice && !model.canPreviewVoice)
+                    if let message = model.voicePreviewMessage { Text(message).font(.footnote) }
                     Picker("Watch reply voice", selection: $model.watchVoiceChoice) {
                         Text("Use iPhone voice").tag("iphone")
                         Text("Automatic on Watch").tag("watch-auto")
@@ -427,16 +432,14 @@ struct SettingsScreen: View {
                             ForEach(model.availableWatchVoices) { Text($0.label).tag("watch:" + $0.id) }
                         }
                     }.pickerStyle(.navigationLink)
-                    Button(model.previewingVoice ? "Stop preview" : "Preview voice") {
-                        if model.previewingVoice { model.stopVoicePreview() }
-                        else { model.previewVoice() }
-                    }.disabled(!model.previewingVoice && !model.canPreviewVoice)
-                    if let message = model.voicePreviewMessage { Text(message).font(.footnote) }
                 } header: { Text("Voice") } footer: {
-                    Text("Automatic chooses a high-quality available voice for your language. Siri voices aren’t available to Avatodo. Download Enhanced or Premium voices in the device’s Accessibility settings. Use iPhone voice generates a short audio reply on this iPhone and sends it to Watch, so its Premium voice pack can stay on iPhone. Delayed or unavailable audio falls back to local Watch speech. Open Avatodo on Watch to refresh its available voices.")
+                    Text("Automatic chooses a high-quality available voice for your language. Siri voices aren’t available to Avatodo. Download Enhanced or Premium voices in the device’s Accessibility settings. A voice chosen from the Watch list plays locally, without generating and transferring audio from iPhone. Use iPhone voice generates a short audio reply on this iPhone and sends it to Watch, so its Premium voice pack can stay on iPhone. Delayed or unavailable audio falls back to local Watch speech. Open Avatodo on Watch to refresh its available voices.")
                 }
                 Section {
-                    Text("Upload Markdown copies of your notes to an Avatodo folder in your personal Google Drive. Connect Muse to your Drive separately to use those copies.")
+                    Text("Upload copies of your notes to an Avatodo folder in your personal Google Drive. Connect Muse to your Drive separately to use those copies.")
+                    Picker("File format", selection: Binding(get: { model.drive.copyFormat }, set: { model.drive.setCopyFormat($0, notes: model.notes) })) {
+                        ForEach(DriveCopyFormat.allCases, id: \.self) { format in Text(format.title).tag(format) }
+                    }.pickerStyle(.navigationLink)
                     if model.drive.connected {
                         if let email = model.drive.accountEmail { Label(email, systemImage: "checkmark.circle").privacySensitive() }
                         Button(model.drive.uploading ? "Uploading…" : "Upload now") { model.drive.changed(model.notes) }
@@ -450,7 +453,7 @@ struct SettingsScreen: View {
                     }
                     if let message = model.drive.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
                 } header: { Text("Google Drive") } footer: {
-                    Text("Optional. Notes go directly from this iPhone to your Google account. New local changes update the copies while Avatodo can run. Drive edits aren’t imported. Deleting a local note or disconnecting doesn’t delete its Drive copy. Conversation and edit receipts aren’t uploaded. Google manages sign-in securely; no Avatodo server is involved.")
+                    Text("Optional. Notes go directly from this iPhone to your Google account. New local changes update the copies while Avatodo can run. Markdown supports formatted previews on Drive’s web viewer. Plain text is the compatibility option for Drive on iPhone and shows readable text and checklist marks. Changing format updates the same files. Drive edits aren’t imported. Deleting a local note or disconnecting doesn’t delete its Drive copy. Conversation and edit receipts aren’t uploaded. Google manages sign-in securely; no Avatodo server is involved.")
                 }
                 Section("Conversation") {
                     Button("Start fresh") { model.startFresh(); dismiss() }.disabled(!model.state.phase.isIdle)
