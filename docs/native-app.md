@@ -81,7 +81,7 @@ The Watch receives the preferred voice identifier and language. It uses that voi
 
 Simulator checks verified voice options, selection persistence through relaunch, and Preview/Stop/end behavior. The owner confirmed that a downloaded voice appears and previews on physical iPhone in TestFlight build 5. Watch speaker playback was subsequently reported working with a simpler local fallback voice; the selected iPhone Premium voice has not been confirmed available on Watch.
 
-In build 6, playback has bounded recovery when Apple never starts speech, stops reporting progress or omits its completion callback. An interrupted or unavailable voice leaves the reply text and saved changes intact and returns the main control to Talk. Stopping speech never undoes a committed note change. Watch renders its speech locally using Apple's managed speech session; it does not receive the iPhone's downloaded voice pack. Apple describes Watch voice downloads under [Settings → Accessibility → Live Speech → Voices](https://support.apple.com/guide/watch/type-to-speak-apd86a007717/watchos); availability through the app's speech API still depends on the Watch's installed voices.
+In build 6, playback has bounded recovery when Apple never starts speech, stops reporting progress or omits its completion callback. An interrupted or unavailable voice leaves the reply text and saved changes intact and returns the main control to Talk. Stopping speech never undoes a committed note change. For local Watch speech, Apple’s managed speech session uses installed Watch voices. Build 7 also offers iPhone-generated audio delivery, described below; the iPhone voice pack stays on iPhone. Apple describes Watch voice downloads under [Settings → Accessibility → Live Speech → Voices](https://support.apple.com/guide/watch/type-to-speak-apd86a007717/watchos); availability through the app's speech API still depends on the Watch's installed voices.
 
 ## Saved companions
 
@@ -101,13 +101,13 @@ If live transcription stays empty, test on the actual unlocked iPhone after endi
 
 The phone may receive Watch work during a finite background window, but the complete foreground/background/locked/force-quit path needs hardware testing. Keep the apps open during initial development checks. An unavailable phone or delayed reply must not be interpreted as proof that nothing was saved; inspect Notes before repeating a request whose result is uncertain.
 
-## Inline note editing (next release source)
+## Inline note editing (TestFlight 7)
 
 Tap a saved note's title or body to type directly on the note screen. There is no separate edit sheet or pencil action. Changes save after a 600 ms pause, when editing ends, when leaving the note and when the app becomes inactive. An empty title saves as “Untitled”. The keyboard's Done control ends typing; it is not a separate save requirement. New-note creation still has its own composer.
 
 Opening “Update this note”, checking checklist items or using note Undo first flushes pending typing. Title/body edits preserve simultaneous changes to untouched fields and checklist items. If both typing and the agent changed the same field, automatic saving stops and retains the typed draft in memory instead of overwriting the saved version. The note shows Retry save and an explicit Use saved version action. Store failures retain the draft while the app process remains alive; drafts that have not been saved are not a durable backup.
 
-Verification: 46 package tests pass, including seven inline-edit cases covering automatic saving, reopening/Undo, concurrent voice edits, conflict recovery, in-flight typing and validation. The native phone/Watch Simulator build passes. On the iPhone Simulator, directly edited title/body values were checked in the saved snapshot and after navigating away and reopening. This source change is not in the already processed TestFlight build 6.
+Verification: 49 package tests pass, including seven inline-edit cases covering automatic saving, reopening/Undo, concurrent voice edits, conflict recovery, in-flight typing and validation. The native phone/Watch Simulator build passes. On the iPhone Simulator, directly edited title/body values were checked in the saved snapshot and after navigating away and reopening. This is included in the processed TestFlight build 7; physical acceptance remains pending.
 
 ## Next-release animation, Watch voice and Drive source
 
@@ -115,7 +115,7 @@ New companion creation uses two image requests: artwork, then a reference-based 
 
 Settings → Voice → Watch reply voice offers Use iPhone voice, Automatic on Watch and reported installed Watch voices. Use iPhone voice renders a bounded short AAC reply on iPhone and sends it to Watch for playback. The voice pack stays on iPhone. Rendering/delivery/startup failures fall back once to local Watch speech; stopping playback preserves the text and saved notes. This path has wire/runtime tests and a Simulator AAC render/readback/cancellation check. Physical Premium voice parity still needs the owner's phone/Watch test.
 
-Settings → Google Drive connects the user's own account for optional outbound Markdown copies. See [Drive setup and limits](google-drive.md). Google sign-in entry and cancellation were tested in Simulator without granting an account access; the owner chose to perform real authorization and upload after the TestFlight update. These additions require the next TestFlight build; they are not in build 6.
+Settings → Google Drive connects the user's own account for optional outbound Markdown copies. See [Drive setup and limits](google-drive.md). Google sign-in entry and cancellation were tested in Simulator without granting an account access; the owner chose to perform real authorization and upload after the TestFlight update. These additions are included in the processed TestFlight build 7. Real Google upload and physical Premium voice parity remain pending the owner’s device test.
 
 ## Local data and recovery
 
