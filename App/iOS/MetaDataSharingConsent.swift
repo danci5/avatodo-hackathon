@@ -2,7 +2,7 @@ import Foundation
 
 /// Versioned, local permission for remote model requests. No credential is stored here.
 @MainActor final class MetaDataSharingConsent {
-    private static let key = "metaDataSharingConsent.v1"
+    private static let key = "metaDataSharingConsent.v2"
     private let defaults: UserDefaults
     private(set) var isGranted: Bool
 

@@ -286,6 +286,7 @@ struct SettingsScreen: View {
                     if let message { Text(message).font(.footnote) }
                 } header: { Text("Meta connection") } footer: { Text("Requests go directly from this iPhone to Meta. Provider access and usage charges may apply. No Avatodo account or hosted server.") }
                 Section {
+                    Text("Meta AI features are for people aged 18 or older. By allowing Meta requests, you confirm that you meet this requirement.")
                     Text("Meta receives your messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
                     Text("Watch audio goes to your paired iPhone. Apple handles speech recognition, using its speech service when on-device recognition isn’t supported. Avatodo sends text, not raw microphone audio, to Meta.")
                         .font(.footnote).foregroundStyle(.secondary)

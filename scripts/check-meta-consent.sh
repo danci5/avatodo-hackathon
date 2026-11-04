@@ -11,6 +11,7 @@ import Foundation
         let suite = "app.avatodo.consent-check." + UUID().uuidString
         guard let defaults = UserDefaults(suiteName: suite) else { fatalError("Test preferences unavailable") }
         defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: "metaDataSharingConsent.v1")
         let permission = MetaDataSharingConsent(defaults: defaults)
         precondition(!permission.isGranted)
         var requests = 0
@@ -32,7 +33,7 @@ import Foundation
         legacy.removeValue(forKey: "hasDataSharingConsent")
         let missingPermission = try JSONDecoder().decode(CompanionViewState.self, from: JSONSerialization.data(withJSONObject: legacy))
         precondition(missingPermission.hasDataSharingConsent != true)
-        print("PASS: default deny, explicit allow, persisted grant/revoke, denied side effects, wire round-trip and missing wire permission. No model requests sent.")
+        print("PASS: default deny, explicit allow, persisted grant/revoke, old-version grant rejected, denied side effects, wire round-trip and missing wire permission. No model requests sent.")
     }
 }
 SWIFT
