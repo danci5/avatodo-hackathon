@@ -16,3 +16,6 @@ Secrets.*
 *.mobileprovision
 *.log
 artifacts/
+
+__pycache__/
+*.pyc

@@ -23,6 +23,8 @@ See [architecture](docs/architecture.md), [contributing](CONTRIBUTING.md), and [
 
 To work on the existing Swift package, see [local task engine](docs/local-task-engine.md). Its tests require no model API key.
 
+For secure Mac-only API access checks, see [local Meta development setup](docs/meta-development-setup.md). This does not yet test the app or generate a companion.
+
 ## Privacy and source ownership
 
 API keys belong in iPhone Keychain, never source, logs or Watch assets. Requests send relevant user text or character descriptions to the chosen model provider. Local storage does not mean cloud inference is offline or that provider retention is zero.

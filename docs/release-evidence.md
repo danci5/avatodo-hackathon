@@ -4,7 +4,7 @@ This file records verified results, not planned capabilities.
 
 | Area | Current evidence |
 |---|---|
-| Repository | Public hackathon source under Apache-2.0. Repository visibility, access and documentation are being reverified after the 4 November repository rename and history cleanup. Public source availability is separate from an installable app release |
+| Repository | [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), public under Apache-2.0. Unauthenticated access and a fresh mirror of every published branch were verified 4 November 2026. Private planning/design remain separate; public source availability is separate from an installable app release |
 | Local task engine | Swift 6 package built on macOS with Xcode 27.0 / Swift 6.4; 9 Swift Testing tests passed on 3 November 2026 using `bash scripts/test.sh` |
 | Application build | Not yet verified |
 | Physical iPhone/Watch | User reports version 27.2; exact models and current connection not yet verified |
