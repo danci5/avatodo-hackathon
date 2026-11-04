@@ -1,24 +1,77 @@
-# Avatodo
+<p align="center">
+  <img src="App/Resources/Assets.xcassets/DefaultLion.imageset/lion.png" alt="The Avatodo lion wearing black sunglasses" width="180">
+</p>
 
-A personalized companion for iPhone and Apple Watch, demonstrated with a local notes and checklist agent.
+<h1 align="center">Avatodo 🦁</h1>
 
-The iPhone runs the agent, stores your notes and calls Meta directly with **your own API key**. There is no Avatodo-hosted backend, shared developer key or mandatory account.
+<p align="center">
+  <strong>Your voice-driven agent for to-dos and checklists.</strong><br>
+  Runs locally on your iPhone. Powered by Meta models. With you on Apple Watch.
+</p>
 
-**Development status:** native iPhone and Watch targets build and run in paired simulators. Actual Meta calls have created notes, corrected and completed checklist items, and generated a custom companion on both simulators. TestFlight **0.1.0 (3)** has processed and is available to the invited internal owner. The owner reports phone catalog authentication now succeeds after replacing the stored key; a complete phone voice request, Watch installation and physical saved-result behavior are still pending. There is no public beta approval, public testing link or App Store release. See [release evidence](docs/release-evidence.md) for the limits of each result.
+<p align="center">
+  <strong>iOS 26+ &nbsp; · &nbsp; watchOS 26+ &nbsp; · &nbsp; Meta Muse &nbsp; · &nbsp; Apache-2.0</strong>
+</p>
 
-## The companion
+<p align="center">
+  <a href="#what-avatodo-does">Features</a> &nbsp; · &nbsp;
+  <a href="#how-it-works">How it works</a> &nbsp; · &nbsp;
+  <a href="#get-started">Get started</a> &nbsp; · &nbsp;
+  <a href="#development">Development</a> &nbsp; · &nbsp;
+  <a href="#privacy">Privacy</a>
+</p>
 
-Use the included stylized 3D lion, or describe a companion for Muse Image to create. The iPhone prepares the image locally and transfers the same character to Watch. Gentle SwiftUI motion responds to listening, thinking, speaking and saved changes; this is local animation from artwork, not generated video.
+---
 
-Talk or type to the companion to create and update notes, tasks and checklists. Notes also support manual editing and checking off items. **Update this note** opens a compact companion panel scoped to that exact note. Ordinary conversation does not create a note.
+Avatodo is a voice-driven, locally running agent that takes care of your to-do lists, notes and checklists on **iPhone and Apple Watch**. Talk to your companion to capture a task, change a plan or check something off. Start with the lion, or create a character of your own.
 
-Conversation stays in memory, with a five-minute idle timeout and a Start fresh action. Notes and operational edit/Undo receipts are saved locally; there is no saved chat archive.
+The **agent and note storage run on your iPhone**. Reasoning and image generation use **Meta's remote models**, called directly with your own API key. No Avatodo-hosted backend, shared developer key or mandatory Avatodo account.
 
-## Build and run
+## What Avatodo does
 
-The repository is temporarily private during submission preparation. Public visibility and logged-out access must be verified before the hackathon entry.
+- **🎙️ Turn words into to-dos.** Talk or type to create notes, tasks and checklists.
+- **✅ Keep the list moving.** Correct an item, mark it complete or undo a saved change. You can also edit notes and check off items manually.
+- **⌚ Pick it up on your wrist.** Use the paired Apple Watch to talk to the same companion and reach the agent on your iPhone.
+- **🦁 Make it yours.** Keep the included lion, or describe a companion for Meta Muse Image to create. The same character appears on both devices.
+- **📱 Keep your notes local.** Notes and edit/Undo receipts are saved on iPhone. Conversation stays in memory, with a five-minute idle timeout and a **Start fresh** action.
 
-Building from source requires a Mac with Xcode 27, the iOS/watchOS SDKs and your own Meta access to `muse-spark-1.3` and `muse-image-1.0`. The app deployment targets are iOS 26 and watchOS 26. Development installation from Xcode also needs Apple signing and a compatible paired iPhone/Watch. Invited TestFlight installation is a separate route and does not require Developer Mode; see [native app setup](docs/native-app.md#internal-testflight-checkpoint).
+### A little less tapping
+
+Example requests for a grocery checklist:
+
+| You say | Avatodo does |
+| --- | --- |
+| “Make a grocery checklist with milk, eggs and bread.” | Creates a note with checkable items. |
+| “Change milk to oat milk.” | Updates the item in the checklist. |
+| “I've got the eggs and bread.” | Marks those items complete. |
+
+Open a note and choose **Update this note** to keep the conversation focused on that exact list. Ordinary conversation does not create a note.
+
+## 🦁 Meet your companion
+
+<img src="App/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="Avatodo's blue lion app icon" width="80" align="right">
+
+The lion is ready from the first launch. For a different companion, describe what you have in mind: **Muse Image creates the artwork**, and Avatodo prepares it locally and sends the same character to your Watch.
+
+Gentle local animation responds to listening, thinking, speaking and saved changes. Your companion's motion works from its artwork; it does not need a new model request for every movement.
+
+## How it works
+
+**Speak → Meta interprets your request → the iPhone agent saves the change → your companion replies.**
+
+| On your devices | Through Meta |
+| --- | --- |
+| Agent orchestration, validated note actions and local storage on iPhone | Language reasoning and tool selection with `muse-spark-1.3` |
+| Paired Watch interface, local artwork preparation and animation | Custom companion artwork with `muse-image-1.0` |
+| Your API key in iPhone Keychain; never sent to Watch | Direct requests using your own provider access |
+
+Watch audio is relayed to the paired iPhone for Apple speech recognition. The Watch relies on that phone; it is not a standalone agent. **Local execution does not mean offline model inference:** Meta features require internet access and send relevant text, note context and character descriptions to Meta.
+
+See the [architecture](docs/architecture.md) and [local task engine](docs/local-task-engine.md) for the implementation.
+
+## Get started
+
+You'll need a **Mac with Xcode 27**, the iOS/watchOS SDKs, and your own Meta access to `muse-spark-1.3` and `muse-image-1.0`. Deployment targets are **iOS 26** and **watchOS 26**. Running on hardware also requires compatible paired devices and Apple signing.
 
 ```sh
 git clone https://github.com/danci5/avatodo-hackathon.git
@@ -26,11 +79,23 @@ cd avatodo-hackathon
 open Avatodo.xcodeproj
 ```
 
-Select the **Avatodo** scheme and an iPhone destination. For hardware, choose your signing team for both targets, then run the phone and companion Watch apps. In the iPhone app, open **Settings**, enter your own Meta API key and save it in iPhone Keychain. No backend setup is required. Cloning the repository does not install a Watch app automatically.
+1. Select the **Avatodo** scheme and an iPhone destination. For hardware, choose your signing team for both app targets.
+2. Run the iPhone app and its paired Watch companion. Cloning the repository does not install the Watch app automatically.
+3. On iPhone, open **Settings**, enter your own Meta API key and save it in Keychain.
+4. Review **Data sharing with Meta** and allow Meta requests, then talk or type to your companion.
 
-The generated Xcode project and all required artwork are included. XcodeGen is needed only to regenerate the project after changing `project.yml`; no separate private repository is required. See [native app setup and behavior](docs/native-app.md) for simulator, speech and device details.
+The Xcode project and required artwork are included. **No backend setup is required.** XcodeGen is only needed to regenerate the project after changing `project.yml`.
 
-## Development checks
+The repository is currently private during submission preparation, so cloning requires repository access. See [native app setup](docs/native-app.md) for simulator, speech, signing and invited TestFlight installation details.
+
+## Development
+
+**Current stage: an early native app in internal testing.** The iPhone and Watch targets build and run in paired simulators. Real Meta calls have created notes, updated and completed checklist items, and generated a matching custom companion on both simulators. Internal TestFlight builds have been processed; complete physical-device acceptance is still in progress. There is no public beta link or App Store release.
+
+The [release evidence](docs/release-evidence.md) records build-specific results and distinguishes simulator, live-model and physical-device checks.
+
+<details>
+<summary><strong>Run the local development checks</strong></summary>
 
 ```sh
 bash scripts/test.sh
@@ -39,19 +104,29 @@ zsh scripts/check-character-transfer.sh
 zsh scripts/check-meta-consent.sh
 ```
 
-These local checks need no API key. An explicit live check, `swift run AvatodoProbe --run-live`, sends billable requests with fictional notes; see [secure Meta development setup](docs/meta-development-setup.md) first.
+These checks need no API key. The explicit live check, `swift run AvatodoProbe --run-live`, sends billable requests with fictional notes. Read [secure Meta development setup](docs/meta-development-setup.md) first.
 
-- [Architecture](docs/architecture.md)
-- [Local task engine and agent](docs/local-task-engine.md)
-- [Shared Swift live Meta evidence](docs/shared-swift-live-evidence.md)
-- [Contributing](CONTRIBUTING.md)
+</details>
 
-## Privacy and licensing
+Explore the [shared Swift live Meta evidence](docs/shared-swift-live-evidence.md), or read [Contributing](CONTRIBUTING.md) to work on the app.
 
-Meta features require users aged **18 or older**, their own legitimate provider access, and explicit permission in **Settings → Data sharing with Meta**. Build 2 resets earlier permission so the updated notice must be reviewed.
+## Privacy
 
-Remote reasoning and image generation require internet and provider access. Relevant text, note context and character descriptions are sent to Meta. Speech uses Apple recognition on the iPhone, on device where supported; some locales may use Apple's speech service. Watch audio is relayed to the paired iPhone and is not saved by Avatodo. Replies are spoken on the device where the conversation began.
+- **Your key stays on iPhone.** It is stored in Keychain and never transferred to Watch.
+- **Meta requests need your permission.** Meta features require users aged **18 or older**, legitimate provider access and explicit consent in **Settings → Data sharing with Meta**. API usage charges may apply.
+- **Model requests send relevant content to Meta.** This includes text, note context and companion descriptions. Local storage and conversation expiry do not imply zero provider retention.
+- **Speech uses Apple recognition.** Recognition runs on iPhone, on device where supported; some locales may use Apple's speech service. Avatodo does not save Watch audio. Replies are spoken on the device where the conversation began.
+- **There is no saved chat archive.** Notes and operational edit/Undo receipts persist locally; recent conversation is temporary.
 
-Keys stay in iPhone Keychain and never travel to Watch. Local notes and animation do not imply offline model inference or zero retention by providers. API usage charges may apply. The app declares model-bound text/notes/prompts as Other User Content for App Functionality, linked to the provider account and not used by Avatodo for tracking. Local conversation expiry does not promise deletion of content retained by Meta. Do not share a provider key with reviewers without Meta’s required permission; see the [review access gate](docs/release-evidence.md#external-review-access-gate).
+<details>
+<summary><strong>Provider access and privacy details</strong></summary>
 
-Source is licensed under [Apache-2.0](LICENSE). Provider services, models and generated assets retain their applicable terms; bundled artwork provenance is recorded in [the asset manifest](App/Resources/asset-provenance.json). No affiliation with Apple, Meta or Ray-Ban is implied.
+The app declares model-bound text, notes and prompts as Other User Content for App Functionality, linked to the provider account and not used by Avatodo for tracking. Local conversation expiry does not promise deletion of content retained by Meta. Build 2 resets earlier permission so the updated notice must be reviewed.
+
+Do not share a provider key with reviewers without Meta's required permission. See the [review access gate](docs/release-evidence.md#external-review-access-gate) and [data-sharing behavior](docs/native-app.md#connect-your-model).
+
+</details>
+
+## License
+
+Source is licensed under [Apache-2.0](LICENSE). Provider services, models and generated artwork retain their applicable terms; see the [asset provenance](App/Resources/asset-provenance.json). No affiliation with Apple, Meta or Ray-Ban is implied.
