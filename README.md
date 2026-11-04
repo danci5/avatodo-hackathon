@@ -3,7 +3,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="https://github.com/danci5/avatodo-hackathon/raw/refs/heads/main/docs/images/avatodo-banner-light.webp">
-    <img src="https://github.com/danci5/avatodo-hackathon/raw/refs/heads/main/docs/images/avatodo-banner-dark.webp" alt="Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch." width="1800">
+    <img src="https://github.com/danci5/avatodo-hackathon/raw/refs/heads/main/docs/images/avatodo-banner-dark.webp" alt="Avatodo — Your voice-driven agent for to-dos and checklists. Create your own avatar. Runs locally on iPhone, powered by Meta models, with you on Apple Watch." width="1800">
   </picture>
 </p>
 
