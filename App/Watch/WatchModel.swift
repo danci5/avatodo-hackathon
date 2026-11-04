@@ -22,6 +22,8 @@ import WatchKit
     private var undoTimer: Task<Void, Never>?
     private var microphoneTask: Task<Void, Never>?
     private var waitingCharacter: (Data, CharacterManifest)?
+    private var chunkAssembler = CharacterChunkAssembler()
+    private var selectedCharacterID: UUID?
     private var displayedCharacterID: UUID?
     private var lastRemoteDate = Date.distantPast
     private var lastRemoteSequence = -1
@@ -96,12 +98,24 @@ import WatchKit
         link.send(WatchCommand(kind: kind, requestID: localRequest ?? UUID(), text: text, receiptID: receipt, packetCount: count), type: "command")
     }
     private func received(_ data: Data) {
-        guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data), envelope.type == "state",
+        guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data) else { return }
+        if envelope.type == "characterChunk" {
+            guard let chunk = try? JSONDecoder().decode(CharacterChunk.self, from: envelope.payload) else { return }
+            if let completed = try? chunkAssembler.accept(chunk) {
+                installCharacter(completed.image, completed.manifest)
+            }
+            return
+        }
+        guard envelope.type == "state",
               let incoming = try? JSONDecoder().decode(CompanionViewState.self, from: envelope.payload) else { return }
         if incoming.epoch == remoteEpoch { guard incoming.sequence > lastRemoteSequence else { return } }
         else { guard incoming.updatedAt >= lastRemoteDate else { return } }
         remoteEpoch = incoming.epoch; lastRemoteSequence = incoming.sequence; lastRemoteDate = incoming.updatedAt
         reachable = true
+        selectedCharacterID = incoming.characterID
+        if let completed = chunkAssembler.select(incoming.characterID, at: incoming.updatedAt) {
+            installCharacter(completed.image, completed.manifest)
+        }
         syncCharacter(incoming.characterID)
         // A late status for the previous turn cannot replace a just-started recording.
         if awaitingStart, incoming.requestID != localRequest, incoming.phase.isIdle, incoming.phase != .error { return }
@@ -136,13 +150,15 @@ import WatchKit
                     timeout = Task { [weak self] in
                         try? await Task.sleep(for: .seconds(30))
                         guard !Task.isCancelled, let self, capturing else { return }
-                        stopCapture(); command(.cancel); state.phase = .error; state.caption = "Recording ended"
-                        state.text = "Try a shorter request. Nothing was sent to the agent."
+                        let message = "Try a shorter request. Nothing was sent to the agent."
+                        stopCapture(); command(.cancel, text: message); state.phase = .error; state.caption = "Recording ended"
+                        state.text = message
                     }
                 } catch is CancellationError {
                     microphone.stop()
                 } catch {
-                    stopCapture(); command(.cancel); state.phase = .error; state.caption = "Couldn’t listen"; state.text = error.localizedDescription
+                    let message = error.localizedDescription
+                    stopCapture(); command(.cancel, text: message); state.phase = .error; state.caption = "Couldn’t listen"; state.text = message
                 }
             }
         }
@@ -205,10 +221,11 @@ import WatchKit
     private func receivedCharacter(_ image: Data, _ metadata: Data) {
         guard let manifest = try? JSONDecoder().decode(CharacterManifest.self, from: metadata),
               CharacterStore.valid(image), CharacterStore.digest(image) == manifest.sha256 else { return }
-        if manifest.id == state.characterID { installCharacter(image, manifest) }
-        else { waitingCharacter = (image, manifest) }
+        if manifest.id == selectedCharacterID { installCharacter(image, manifest) }
+        else if manifest.generatedAt > lastRemoteDate { waitingCharacter = (image, manifest) }
     }
     private func installCharacter(_ image: Data, _ manifest: CharacterManifest) {
+        guard manifest.id == selectedCharacterID else { return }
         do { try CharacterStore.save(image, manifest: manifest); characterData = image; displayedCharacterID = manifest.id }
         catch { /* Keep the last valid artwork when transfer preparation fails. */ }
     }

@@ -11,6 +11,7 @@
 		09BBA5ADE0532D1495A87751 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		101672814772F60BF4A3B2BB /* DevelopmentBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */; };
 		13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7929606CD93008BF8FB35951 /* AvatodoApp.swift */; };
+		179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED724BB1E90942C940650053 /* CharacterStore.swift */; };
 		25BAB5922280AE4CF1347640 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
 		282AF9F9EB2F8AF53DB9681D /* AvatodoCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FD2E87FA4DD33E23B471F5 /* AvatodoCore */; };
@@ -26,6 +27,7 @@
 		92C051E6C00012CFB65830FA /* PhoneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84AA33C5C2802CA212937B76 /* PhoneModel.swift */; };
 		96505ADCAFBC30959213B2E2 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED724BB1E90942C940650053 /* CharacterStore.swift */; };
+		BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E230105EAA6DBF31D04B2876 /* Assets.xcassets */; };
 		D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
 		E5F41473C6BFCD2D4FB21ED4 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
@@ -76,6 +78,7 @@
 		B6494A9E74BF53E3432A3B41 /* AvatodoWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AvatodoWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C692854851D5F69AF6A7D38B /* PhoneRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRecognition.swift; sourceTree = "<group>"; };
 		D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatodoWatchApp.swift; sourceTree = "<group>"; };
+		DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterChunkAssembler.swift; sourceTree = "<group>"; };
 		E230105EAA6DBF31D04B2876 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E231E435EAA0748E3E4B29BB /* CompanionLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionLink.swift; sourceTree = "<group>"; };
 		ED724BB1E90942C940650053 /* CharacterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterStore.swift; sourceTree = "<group>"; };
@@ -115,6 +118,7 @@
 		74191EBAE8E360147E97B7A4 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */,
 				ED724BB1E90942C940650053 /* CharacterStore.swift */,
 				E231E435EAA0748E3E4B29BB /* CompanionLink.swift */,
 				03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */,
@@ -284,6 +288,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */,
+				179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */,
 				1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */,
 				F19B08B61994405804CF1447 /* CompanionLink.swift in Sources */,
 				09BBA5ADE0532D1495A87751 /* CompanionState.swift in Sources */,
@@ -303,6 +308,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4F5B5E8F4F1B106E86204B88 /* AvatodoWatchApp.swift in Sources */,
+				BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */,
 				9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */,
 				887A5B0D1C773CC91EE3327C /* CompanionLink.swift in Sources */,
 				96505ADCAFBC30959213B2E2 /* CompanionState.swift in Sources */,

@@ -28,4 +28,3 @@ final class RelayPCMEncoder: @unchecked Sendable {
         return Data(bytes: channel, count: Int(output.frameLength) * MemoryLayout<Int16>.size)
     }
 }
-

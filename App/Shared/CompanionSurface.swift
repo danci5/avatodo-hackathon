@@ -21,6 +21,7 @@ struct CompanionArtwork: View {
                 .offset(y: reduceMotion ? 0 : (phase == .thinking ? sin(t * 3) * 2 : 0))
         }
         .frame(width: size, height: size)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Your companion")
         .onChange(of: data, initial: true) { _, bytes in
             preparedImage = bytes.flatMap { CGImageSourceCreateWithData($0 as CFData, nil) }

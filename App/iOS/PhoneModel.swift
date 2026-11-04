@@ -320,16 +320,19 @@ import AvatodoCore
             try CharacterStore.save(prepared, manifest: manifest)
             characterData = prepared; characterManifest = manifest
             state.characterID = manifest.id; state.characterName = manifest.name.isEmpty ? "Avatodo" : manifest.name
-            sendCharacter(); publish()
+            publish(); sendCharacter()
         } catch { alert = error.localizedDescription }
     }
     func useDefaultCharacter() {
-        do { try CharacterStore.reset(); characterData = nil; characterManifest = nil; state.characterID = nil; state.characterName = "Avatodo"; publish() }
+        do {
+            try CharacterStore.reset(); link.cancelCharacterTransfers()
+            characterData = nil; characterManifest = nil; state.characterID = nil; state.characterName = "Avatodo"; publish()
+        }
         catch { alert = error.localizedDescription }
     }
-    private func sendCharacter() {
+    private func sendCharacter(retryForeground: Bool = false) {
         guard let manifest = characterManifest else { return }
-        link.transferCharacter(url: CharacterStore.url(for: manifest.id), manifest: manifest)
+        link.transferCharacter(url: CharacterStore.url(for: manifest.id), manifest: manifest, retryForeground: retryForeground)
     }
     private func received(_ data: Data) {
         guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data) else { return }
@@ -339,14 +342,14 @@ import AvatodoCore
         guard envelope.type == "command", let command = try? JSONDecoder().decode(WatchCommand.self, from: envelope.payload) else { return }
         switch command.kind {
         case .status: publish(); sendCharacter()
-        case .character: sendCharacter()
+        case .character: sendCharacter(retryForeground: true)
         case .begin: begin(fromWatch: true, id: command.requestID)
         case .text: if let text = command.text { submitText(text, fromWatch: true, id: command.requestID) }
         case .finish: if watchOrigin && requestID == command.requestID { finish(packetCount: command.packetCount) }
         case .cancel:
             if cancelledWatchRequests.count >= 80 { cancelledWatchRequests.removeAll() }
             cancelledWatchRequests.insert(command.requestID)
-            if watchOrigin && requestID == command.requestID { cancel() }
+            if watchOrigin && requestID == command.requestID { cancel(message: command.text) }
             else { publish() }
         case .undo: undo(receiptID: command.receiptID)
         case .startFresh: startFresh()
