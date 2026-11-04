@@ -14,6 +14,16 @@ import AvatodoCore
     var alert: String?
     var checkingConnection = false
     var connectionStatus: String?
+    var availableVoices: [SpeechVoiceOption] = []
+    var previewingVoice = false
+    var voicePreviewMessage: String?
+    var preferredVoiceID = UserDefaults.standard.string(forKey: "preferredVoiceID") ?? "" {
+        didSet {
+            if preferredVoiceID.isEmpty { UserDefaults.standard.removeObject(forKey: "preferredVoiceID") }
+            else { UserDefaults.standard.set(preferredVoiceID, forKey: "preferredVoiceID") }
+            stopVoicePreview(); voicePreviewMessage = nil; syncVoicePreference()
+        }
+    }
     var canControl: Bool { state.phase.isIdle || !watchOrigin }
     var metaDataSharingAllowed: Bool { state.hasDataSharingConsent == true }
     var generating = false
@@ -30,6 +40,7 @@ import AvatodoCore
     private let microphone = MicrophoneCapture()
     private let recognition = PhoneRecognition()
     private let voice = DeviceVoice()
+    private var voicePreviewID: UUID?
     private let link = CompanionLink()
     private var work: Task<Void, Never>?
     private var idle: Task<Void, Never>?
@@ -71,7 +82,42 @@ import AvatodoCore
             guard let self, reachable else { return }
             self.publish(); self.sendCharacter()
         }
+        refreshVoices()
         Task { await refreshNotes() }
+    }
+    var voiceLanguage: String {
+        availableVoices.first(where: { $0.id == preferredVoiceID })?.language ?? DeviceVoice.defaultLanguage
+    }
+    var canPreviewVoice: Bool { state.phase.isIdle && work == nil }
+    func refreshVoices() {
+        stopVoicePreview()
+        availableVoices = DeviceVoice.installedVoiceOptions()
+        syncVoicePreference()
+    }
+    private func syncVoicePreference() {
+        state.preferredVoiceID = preferredVoiceID.isEmpty ? nil : preferredVoiceID
+        state.preferredVoiceLanguage = voiceLanguage
+        publish()
+    }
+    func previewVoice() {
+        guard canPreviewVoice else { return }
+        stopVoicePreview(); voicePreviewMessage = nil
+        let id = UUID(); voicePreviewID = id; previewingVoice = true
+        do {
+            try voice.speak("Hello! This is how I sound.", preferredID: state.preferredVoiceID,
+                            language: voiceLanguage) { [weak self] in
+                guard let self, voicePreviewID == id else { return }
+                voicePreviewID = nil; previewingVoice = false
+            }
+        } catch {
+            guard voicePreviewID == id else { return }
+            voicePreviewID = nil; previewingVoice = false
+            voicePreviewMessage = (error as? AudioFailure)?.localizedDescription ?? "Voice preview could not start. Try again."
+        }
+    }
+    func stopVoicePreview() {
+        guard voicePreviewID != nil else { return }
+        voicePreviewID = nil; previewingVoice = false; voice.stop()
     }
     func refreshKey() { state.hasModelKey = ((try? KeychainStore.load()) ?? nil) != nil; publish() }
     func saveKey(_ key: String) throws {
@@ -143,7 +189,7 @@ import AvatodoCore
         state.hasDataSharingConsent = allowed
         if !allowed {
             characterRequest?.cancel()
-            voice.stop()
+            stopVoicePreview(); voice.stop()
             if work != nil || !state.phase.isIdle { cancel(message: MetaConsentError.revoked.localizedDescription) }
             else { startFresh() }
             Task { _ = await agent?.startFresh() }
@@ -189,7 +235,7 @@ import AvatodoCore
         guard agent != nil, setupError == nil else { return }
         guard requireConsent(fromWatch: fromWatch, id: id) else { return }
         guard state.hasModelKey else { setPhase(.error, text: "Add your Meta API key in iPhone Settings first."); return }
-        voice.stop(); confirmationTimer?.cancel(); replyTimer?.cancel(); undoTimer?.cancel(); idle?.cancel(); showUndo = false
+        stopVoicePreview(); voice.stop(); confirmationTimer?.cancel(); replyTimer?.cancel(); undoTimer?.cancel(); idle?.cancel(); showUndo = false
         cancellationMessage = nil; state.resultIsMutation = false
         state.sessionExpiresAt = nil; state.undoExpiresAt = nil
         state.undoReceiptID = nil; state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
@@ -249,7 +295,7 @@ import AvatodoCore
         scopedNoteID = scope; watchOrigin = fromWatch; requestID = id; state.requestID = id
         state.replyDevice = fromWatch ? "watch" : "phone"
         state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
-        showUndo = false; confirmationTimer?.cancel(); undoTimer?.cancel(); replyTimer?.cancel(); idle?.cancel(); voice.stop()
+        showUndo = false; confirmationTimer?.cancel(); undoTimer?.cancel(); replyTimer?.cancel(); idle?.cancel(); stopVoicePreview(); voice.stop()
         cancellationMessage = nil; state.resultIsMutation = false
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         if fromWatch { startBackgroundWork() }
@@ -312,7 +358,8 @@ import AvatodoCore
                     }
                     endBackgroundWork()
                 } else {
-                    do { try voice.speak(outcome.reply) { [weak self] in self?.readyAfterReply() } }
+                    do { try voice.speak(outcome.reply, preferredID: state.preferredVoiceID,
+                                         language: voiceLanguage) { [weak self] in self?.readyAfterReply() } }
                     catch { readyAfterReply() }
                 }
             } else { readyAfterReply() }
@@ -369,7 +416,7 @@ import AvatodoCore
     }
     func startFresh() {
         guard state.phase.isIdle, work == nil else { return }
-        voice.stop(); confirmationTimer?.cancel(); undoTimer?.cancel(); showUndo = false; scopedNoteID = nil
+        stopVoicePreview(); voice.stop(); confirmationTimer?.cancel(); undoTimer?.cancel(); showUndo = false; scopedNoteID = nil
         state.sessionExpiresAt = nil; state.undoExpiresAt = nil; state.resultIsMutation = false
         state.text = ""; state.noteID = nil; state.noteTitle = nil; state.undoReceiptID = nil; state.requestID = nil
         Task { _ = await agent?.startFresh() }; setPhase(.ready); scheduleIdle()

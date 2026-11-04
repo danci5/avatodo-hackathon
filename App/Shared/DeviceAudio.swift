@@ -115,15 +115,41 @@ import Foundation
     private var onEnd: (@MainActor () -> Void)?
     private var ownsSession = false
     override init() { super.init(); synthesizer.delegate = self }
-    func speak(_ text: String, ended: @escaping @MainActor () -> Void) throws {
+    static var defaultLanguage: String { AVSpeechSynthesisVoice.currentLanguageCode() }
+    static func installedVoiceOptions() -> [SpeechVoiceOption] {
+        AVSpeechSynthesisVoice.speechVoices().filter { !$0.voiceTraits.contains(.isPersonalVoice) }.map(option)
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+    }
+    private static func option(_ voice: AVSpeechSynthesisVoice) -> SpeechVoiceOption {
+        SpeechVoiceOption(id: voice.identifier, name: voice.name, language: voice.language,
+                          quality: SpeechVoiceOption.Quality(rawValue: voice.quality.rawValue) ?? .standard,
+                          isPersonal: voice.voiceTraits.contains(.isPersonalVoice),
+                          isNovelty: voice.voiceTraits.contains(.isNoveltyVoice))
+    }
+    static func select(preferredID: String?, language: String) -> AVSpeechSynthesisVoice? {
+        let installed = AVSpeechSynthesisVoice.speechVoices()
+        let system = AVSpeechSynthesisVoice(language: language)
+        if let selected = SpeechVoiceSelection.select(preferredID: preferredID, language: language,
+                                                      voices: installed.map(option), systemDefaultID: system?.identifier),
+           let voice = installed.first(where: { $0.identifier == selected.id }),
+           !voice.voiceTraits.contains(.isPersonalVoice) { return voice }
+        // Never fall through to an unchecked system/Personal/novelty voice.
+        if let system, !system.voiceTraits.contains(.isPersonalVoice), !system.voiceTraits.contains(.isNoveltyVoice),
+           SpeechVoiceSelection.languageMatches(system.language, language) { return system }
+        return nil
+    }
+    func speak(_ text: String, preferredID: String? = nil, language: String? = nil,
+               ended: @escaping @MainActor () -> Void) throws {
         stop()
+        guard let selected = Self.select(preferredID: preferredID, language: language ?? Self.defaultLanguage)
+        else { throw AudioFailure.voiceUnavailable }
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.playback, mode: .spokenAudio)
             try session.setActive(true)
             ownsSession = true
             let utterance = AVSpeechUtterance(string: String(text.prefix(8000)))
-            utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.language.languageCode?.identifier ?? "en")
+            utterance.voice = selected
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
             utteranceID = ObjectIdentifier(utterance); onEnd = ended
             synthesizer.speak(utterance)
@@ -160,7 +186,7 @@ import Foundation
 
 enum AudioFailure: Error, LocalizedError {
     case microphoneDenied, speechDenied, unavailable, incompleteAudio, noWords, simulatorInput
-    case inputUnavailable, conversionFailed, bufferOverflow, captureStart(code: Int)
+    case inputUnavailable, conversionFailed, bufferOverflow, captureStart(code: Int), voiceUnavailable
     var errorDescription: String? {
         switch self {
         case .simulatorInput: "Live microphone capture is disabled in this simulator. Type a message or test on a physical device."
@@ -171,6 +197,7 @@ enum AudioFailure: Error, LocalizedError {
         case .conversionFailed: "Microphone audio could not be prepared for speech. Nothing was sent. Try again or type on iPhone."
         case .bufferOverflow: "Microphone audio was interrupted while the app was busy. Nothing was sent. Try again or type on iPhone."
         case let .captureStart(code): "Microphone capture could not start (code \(code)). Nothing was sent. Try again or type on iPhone."
+        case .voiceUnavailable: "No installed voice is available for this language. Try another voice in Settings."
         case .incompleteAudio: "The audio connection was interrupted. Nothing was sent to the agent. Try again."
         case .noWords: "I didn’t catch any words. Try again."
         }

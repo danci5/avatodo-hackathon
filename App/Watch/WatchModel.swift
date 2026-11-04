@@ -193,7 +193,8 @@ import WatchKit
         if incoming.phase != .listening, capturing { stopCapture() }
         if incoming.phase == .speaking, spokenRequest != incoming.requestID, !incoming.text.isEmpty {
             stopCapture(); spokenRequest = incoming.requestID
-            do { try voice.speak(incoming.text) { [weak self] in
+            do { try voice.speak(incoming.text, preferredID: incoming.preferredVoiceID,
+                                 language: incoming.preferredVoiceLanguage) { [weak self] in
                 guard let self else { return }
                 awaitingStop = true; command(.playbackEnded); waitForReply(seconds: 15)
             }} catch { command(.playbackEnded); waitForReply(seconds: 15) }

@@ -1,8 +1,10 @@
 import SwiftUI
 import AvatodoCore
+@preconcurrency import AVFoundation
 
 struct PhoneRoot: View {
     @Bindable var model: PhoneModel
+    @Environment(\.scenePhase) private var scenePhase
     @State private var settings = false
     @State private var character = false
     @State private var tab = 0
@@ -39,6 +41,14 @@ struct PhoneRoot: View {
         } message: { Text(model.alert ?? "") }
         .overlay {
             if let error = model.setupError { ContentUnavailableView("Notes unavailable", systemImage: "externaldrive.badge.exclamationmark", description: Text(error)).background(.background) }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.refreshVoices() }
+            else { model.stopVoicePreview() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AVSpeechSynthesizer.availableVoicesDidChangeNotification)
+            .receive(on: DispatchQueue.main)) { _ in
+            model.refreshVoices()
         }
     }
 }
@@ -315,7 +325,33 @@ struct SettingsScreen: View {
                 } header: { Text("Data sharing with Meta") } footer: {
                     Text("Your permission covers phone and Watch requests. You can turn it off here at any time. Saved notes remain in local storage; data already sent to Meta cannot be recalled by Avatodo. Meta’s privacy policy and terms also apply.")
                 }
-                Section("Voice") { Toggle("Speak replies", isOn: $model.speaksReplies) }
+                Section {
+                    Toggle("Speak replies", isOn: $model.speaksReplies)
+                    Picker("Reply voice", selection: $model.preferredVoiceID) {
+                        Text("Automatic").tag("")
+                        if !model.preferredVoiceID.isEmpty,
+                           !model.availableVoices.contains(where: { $0.id == model.preferredVoiceID }) {
+                            Text("Unavailable — using Automatic").tag(model.preferredVoiceID)
+                        }
+                        Section("Current language") {
+                            ForEach(model.availableVoices.filter { SpeechVoiceSelection.languageMatches($0.language, DeviceVoice.defaultLanguage) }) {
+                                Text($0.label).tag($0.id)
+                            }
+                        }
+                        Section("Other languages") {
+                            ForEach(model.availableVoices.filter { !SpeechVoiceSelection.languageMatches($0.language, DeviceVoice.defaultLanguage) }) {
+                                Text($0.label).tag($0.id)
+                            }
+                        }
+                    }.pickerStyle(.navigationLink)
+                    Button(model.previewingVoice ? "Stop preview" : "Preview voice") {
+                        if model.previewingVoice { model.stopVoicePreview() }
+                        else { model.previewVoice() }
+                    }.disabled(!model.previewingVoice && !model.canPreviewVoice)
+                    if let message = model.voicePreviewMessage { Text(message).font(.footnote) }
+                } header: { Text("Voice") } footer: {
+                    Text("Automatic chooses a high-quality available voice for your language. Siri voices aren’t available to Avatodo. Enhanced and Premium voices must already be installed. Voice availability may differ on Apple Watch; it uses a matching installed voice when your choice isn’t available there.")
+                }
                 Section("Conversation") {
                     Button("Start fresh") { model.startFresh(); dismiss() }.disabled(!model.state.phase.isIdle)
                     Text("Conversation stays in memory and clears after five idle minutes. Only notes and their edit receipts are saved.")
@@ -329,6 +365,8 @@ struct SettingsScreen: View {
                     Link("Source code", destination: URL(string: "https://github.com/danci5/avatodo-hackathon")!)
                 }
             }.navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
+                .onAppear { model.refreshVoices() }
+                .onDisappear { model.stopVoicePreview() }
                 .onChange(of: key) { _, value in
                     if !value.isEmpty { model.resetConnectionStatus(); message = nil }
                 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00B63EFFC02298851E5D7B3B /* SpeechVoiceSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */; };
 		070EDEAD6BF79AA0C38B4EC6 /* DeviceAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE18A2646568DECF7D77B0A /* DeviceAudio.swift */; };
 		09BBA5ADE0532D1495A87751 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		101672814772F60BF4A3B2BB /* DevelopmentBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */; };
@@ -24,6 +25,7 @@
 		585603B61A805F5DA591E71E /* PhoneViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763644AB913F6546845CC3C7 /* PhoneViews.swift */; };
 		610824378E9FB6D25802B817 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167F6A2AD1043E4C6628B69C /* WatchModel.swift */; };
 		6928B4194D43E74BA50D7FF8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F209C7E8820873050F38C19B /* PrivacyInfo.xcprivacy */; };
+		83667AD0D9EA9D20EE617CDE /* SpeechVoiceSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */; };
 		887A5B0D1C773CC91EE3327C /* CompanionLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = E231E435EAA0748E3E4B29BB /* CompanionLink.swift */; };
 		8C8CA7FF17098456BCA88280 /* MetaDataSharingConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA85DE00B51690DACD678F80 /* MetaDataSharingConsent.swift */; };
 		8DCB417584DBDEBE85A36E16 /* CompanionSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */; };
@@ -83,6 +85,7 @@
 		B6494A9E74BF53E3432A3B41 /* AvatodoWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AvatodoWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C692854851D5F69AF6A7D38B /* PhoneRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRecognition.swift; sourceTree = "<group>"; };
 		CA85DE00B51690DACD678F80 /* MetaDataSharingConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetaDataSharingConsent.swift; sourceTree = "<group>"; };
+		CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechVoiceSelection.swift; sourceTree = "<group>"; };
 		D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatodoWatchApp.swift; sourceTree = "<group>"; };
 		DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterChunkAssembler.swift; sourceTree = "<group>"; };
 		E230105EAA6DBF31D04B2876 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -133,6 +136,7 @@
 				7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */,
 				8AE18A2646568DECF7D77B0A /* DeviceAudio.swift */,
 				6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */,
+				CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -313,6 +317,7 @@
 				FE6910C41E254BAEB3FAF384 /* PhoneRecognition.swift in Sources */,
 				585603B61A805F5DA591E71E /* PhoneViews.swift in Sources */,
 				D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */,
+				83667AD0D9EA9D20EE617CDE /* SpeechVoiceSelection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -329,6 +334,7 @@
 				3963CECF9169BC715C103BB3 /* CompanionSurface.swift in Sources */,
 				070EDEAD6BF79AA0C38B4EC6 /* DeviceAudio.swift in Sources */,
 				47774E76A3E02A68EB1B1224 /* RelayPCMEncoder.swift in Sources */,
+				00B63EFFC02298851E5D7B3B /* SpeechVoiceSelection.swift in Sources */,
 				610824378E9FB6D25802B817 /* WatchModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -419,7 +425,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -485,7 +491,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

@@ -36,6 +36,8 @@ struct CompanionViewState: Codable, Sendable, Equatable {
     var hasModelKey = false
     var hasDataSharingConsent: Bool?
     var speechReady = false
+    var preferredVoiceID: String?
+    var preferredVoiceLanguage: String?
     var characterID: UUID?
     var characterName = "Avatodo"
     var epoch = UUID()
