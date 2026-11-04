@@ -14,6 +14,7 @@ import AvatodoCore
     private(set) var uploading = false
     private(set) var message: String?
     private(set) var folderID: String?
+    private(set) var copyFormat = DriveCopyFormat(rawValue: UserDefaults.standard.string(forKey: "driveCopyFormat") ?? "") ?? .markdown
     private var accountID: String?
     private var epoch = UUID()
     private var pending: [Note]?
@@ -84,6 +85,12 @@ import AvatodoCore
         GIDSignIn.sharedInstance.signOut()
         message = "Disconnected on this iPhone. Existing copies remain in Google Drive."
     }
+    func setCopyFormat(_ format: DriveCopyFormat, notes: [Note]) {
+        guard format != copyFormat else { return }
+        copyFormat = format
+        UserDefaults.standard.set(format.rawValue, forKey: "driveCopyFormat")
+        changed(notes)
+    }
     func changed(_ notes: [Note]) {
         guard connected, let accountID else { return }
         pending = notes
@@ -95,9 +102,10 @@ import AvatodoCore
             // Coalesce a quick series of local edits; do not delay the agent or audio.
             try? await Task.sleep(for: .milliseconds(600))
             while !Task.isCancelled, epoch == generation, let notes = pending {
-                pending = nil; uploading = true; message = "Uploading Markdown copies…"
+                let format = copyFormat
+                pending = nil; uploading = true; message = "Uploading note copies…"
                 do {
-                    let result = try await exporter.upload(notes: notes, accountID: accountID) { [weak self] in
+                    let result = try await exporter.upload(notes: notes, accountID: accountID, format: format) { [weak self] in
                         guard let self else { throw CancellationError() }
                         return try await self.token(for: accountID, generation: generation)
                     }

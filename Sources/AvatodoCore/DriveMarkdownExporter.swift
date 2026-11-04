@@ -39,6 +39,26 @@ public struct DriveExportSummary: Sendable {
     public let uploadedCount: Int
 }
 
+public enum DriveCopyFormat: String, Codable, CaseIterable, Sendable {
+    case markdown, plainText
+    public var title: String { self == .markdown ? "Markdown (.md)" : "Plain text (.txt)" }
+    public var mimeType: String { self == .markdown ? "text/markdown" : "text/plain" }
+    var marker: String { self == .markdown ? "1" : "plain_text_v1" }
+    func filename(_ note: Note) -> String {
+        let markdown = NoteMarkdown.filename(note)
+        return self == .markdown ? markdown : String(markdown.dropLast(3)) + ".txt"
+    }
+    public func text(_ note: Note) -> String {
+        guard self == .plainText else { return NoteMarkdown.text(note) }
+        var text = note.kind == .task ? "[\(note.isComplete ? "x" : " ")] \(note.title)\n" : note.title + "\n"
+        if !note.body.isEmpty { text += "\n" + note.body + "\n" }
+        if !note.items.isEmpty {
+            text += "\n" + note.items.map { "[\($0.isComplete ? "x" : " ")] \($0.text.replacingOccurrences(of: "\n", with: " "))" }.joined(separator: "\n") + "\n"
+        }
+        return text
+    }
+}
+
 public enum NoteMarkdown {
     public static func text(_ note: Note) -> String {
         var text = "---\navatodo_id: \(note.id.uuidString)\nrevision: \(note.revision)\nkind: \(note.kind.rawValue)\n---\n\n# \(note.title.replacingOccurrences(of: "\n", with: " "))\n"
@@ -79,6 +99,7 @@ public actor DriveMarkdownExporter {
     public init(stateURL: URL, transport: any DriveTransport) { self.stateURL = stateURL; self.transport = transport }
 
     public func upload(notes: [Note], accountID: String,
+                       format: DriveCopyFormat = .markdown,
                        token: @escaping @Sendable () async throws -> String) async throws -> DriveExportSummary {
         guard !running else { throw DriveExportError.busy }
         running = true; defer { running = false }
@@ -119,14 +140,14 @@ public actor DriveMarkdownExporter {
             let localID = note.id.uuidString
             let existing = byNote[localID]
             if existing?.appProperties?["avatodo_revision"] == String(note.revision),
-               existing?.appProperties?["avatodo_format"] == "1", existing?.mimeType == "text/markdown" { continue }
+               existing?.appProperties?["avatodo_format"] == format.marker, existing?.mimeType == format.mimeType { continue }
             let fileID = try await reserveID(existing: existing?.id ?? index.fileIDs[localID], token: token)
             index.fileIDs[localID] = fileID; try save(index)
-            var metadata: [String: JSONValue] = ["name": .string(NoteMarkdown.filename(note)), "mimeType": .string("text/markdown"),
+            var metadata: [String: JSONValue] = ["name": .string(format.filename(note)), "mimeType": .string(format.mimeType),
                 "appProperties": .object(["avatodo_note_id": .string(localID),
-                    "avatodo_revision": .string(String(note.revision)), "avatodo_format": .string("1")])]
+                    "avatodo_revision": .string(String(note.revision)), "avatodo_format": .string(format.marker)])]
             if existing == nil { metadata["id"] = .string(fileID); metadata["parents"] = .array([.string(folderID)]) }
-            do { try await uploadFile(id: existing?.id, metadata: .object(metadata), markdown: NoteMarkdown.text(note), token: token) }
+            do { try await uploadFile(id: existing?.id, metadata: .object(metadata), text: format.text(note), format: format, token: token) }
             catch DriveExportError.http(409) {
                 // The prior create may have committed before its reply was lost.
                 let saved = try await request(path: "drive/v3/files/" + fileID,
@@ -135,7 +156,7 @@ public actor DriveMarkdownExporter {
                       saved["parents"].array?.contains(.string(folderID)) == true,
                       saved["trashed"].bool != true else { throw DriveExportError.duplicateNote }
                 metadata.removeValue(forKey: "id"); metadata.removeValue(forKey: "parents")
-                try await uploadFile(id: fileID, metadata: .object(metadata), markdown: NoteMarkdown.text(note), token: token)
+                try await uploadFile(id: fileID, metadata: .object(metadata), text: format.text(note), format: format, token: token)
             }
             uploaded += 1
         }
@@ -180,12 +201,12 @@ public actor DriveMarkdownExporter {
         }
         throw DriveExportError.invalidResponse
     }
-    private func uploadFile(id: String?, metadata: JSONValue, markdown: String,
+    private func uploadFile(id: String?, metadata: JSONValue, text: String, format: DriveCopyFormat,
                             token: @escaping @Sendable () async throws -> String) async throws {
         let boundary = "avatodo_" + UUID().uuidString
         var data = Data("--\(boundary)\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n".utf8)
         data.append(try JSONEncoder().encode(metadata))
-        data.append(Data("\r\n--\(boundary)\r\nContent-Type: text/markdown; charset=UTF-8\r\n\r\n\(markdown)\r\n--\(boundary)--\r\n".utf8))
+        data.append(Data("\r\n--\(boundary)\r\nContent-Type: \(format.mimeType); charset=UTF-8\r\n\r\n\(text)\r\n--\(boundary)--\r\n".utf8))
         _ = try await request(path: "upload/drive/v3/files" + (id.map { "/" + $0 } ?? ""),
             method: id == nil ? "POST" : "PATCH", query: ["uploadType": "multipart", "fields": "id"],
             body: data, contentType: "multipart/related; boundary=" + boundary, token: token)
