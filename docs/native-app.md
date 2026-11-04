@@ -24,7 +24,7 @@ Developer Mode is for development workflows such as running from Xcode; Apple st
 
 ## Open and build
 
-Open the included `Avatodo.xcodeproj`. It references the local Swift package in this repository and includes the companion Watch target and all required assets. There is no private repository dependency.
+Open the included `Avatodo.xcodeproj`. It references the local Swift package in this repository and includes the companion Watch target and all required assets.
 
 Select the **Avatodo** scheme and an iPhone destination. Select **AvatodoWatch** and the paired Watch destination when running/debugging the Watch app. For physical devices, choose your own team for both targets; no team or provisioning profile is shipped as a shared credential.
 

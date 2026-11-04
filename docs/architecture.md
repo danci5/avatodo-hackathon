@@ -60,4 +60,4 @@ The current baseline uses one canonical image and procedural motion. Generated e
 
 ## Public boundaries
 
-The public repository includes native targets, shared Swift code, artwork/provenance and setup files. It has no private build dependency, hosted agent/MCP endpoint, database service, mandatory login or shared developer key. Relevant note data and prompts leave the device for Meta inference; local non-retention does not promise zero retention by Meta or Apple. See [release evidence](release-evidence.md) for what has actually been tested.
+The repository includes native targets, shared Swift code, artwork/provenance and setup files. The app has no hosted agent/MCP endpoint, database service, mandatory login or shared developer key. Relevant note data and prompts leave the device for Meta inference; local non-retention does not promise zero retention by Meta or Apple. See [release evidence](release-evidence.md) for what has actually been tested.

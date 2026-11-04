@@ -1,6 +1,11 @@
 # Avatodo 🦁
 
-![Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch.](docs/images/avatodo-banner.png)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/avatodo-banner-light.webp">
+    <img src="docs/images/avatodo-banner-dark.webp" alt="Avatodo — Your voice-driven agent for to-dos and checklists. Runs locally on iPhone, powered by Meta models, with you on Apple Watch." width="1800">
+  </picture>
+</p>
 
 <p align="center">
   <strong>iOS 26+ &nbsp; · &nbsp; watchOS 26+ &nbsp; · &nbsp; Meta Muse &nbsp; · &nbsp; Apache-2.0</strong>
@@ -79,7 +84,7 @@ open Avatodo.xcodeproj
 
 The Xcode project and required artwork are included. **No backend setup is required.** XcodeGen is only needed to regenerate the project after changing `project.yml`.
 
-The repository is currently private during submission preparation, so cloning requires repository access. See [native app setup](docs/native-app.md) for simulator, speech, signing and invited TestFlight installation details.
+See [native app setup](docs/native-app.md) for simulator, speech, signing and invited TestFlight installation details.
 
 ## Development
 

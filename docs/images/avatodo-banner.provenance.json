@@ -1,16 +1,41 @@
 {
-  "asset": "avatodo-banner.png",
-  "purpose": "README branding banner; not an app capture or evidence of runtime behavior",
+  "purpose": "README branding banner",
   "created": "2026-11-04",
   "generator": "Codex built-in image generation",
   "reference_asset": "../../App/Resources/Assets.xcassets/DefaultLion.imageset/lion.png",
   "reference_provenance": "../../App/Resources/asset-provenance.json",
   "reference_sha256": "8f238403d1256b12553089ec99317e9fc4a0195ad38a23dd4eb961928e7a83b7",
-  "dimensions": [
-    2172,
-    724
-  ],
-  "sha256": "049b9c90de8628798840158c053e73c51d3967d5d1d5dfc96f3024a9719773bb",
-  "prompt": "Use case: compositing / ads-marketing. Asset type: final wide GitHub README banner for the existing Avatodo project. Create a clean premium horizontal banner, approximately 3:1 aspect ratio (1800 by 600 ideal). Input image 1 is the EXISTING approved Avatodo mascot to reuse as the supporting character insert: a full-body seated golden 3D lion with black sunglasses. Preserve its character identity, exact seated pose, golden fur, sculpted mane, friendly face, black sunglasses, paws and curled tail. Do not redesign the lion. Place the fully visible lion on the left third, with comfortable space above its mane and below its paws. The right two-thirds contains a large crisp white bold modern sans-serif title and the concise product description below it, all left aligned. Background: very dark navy/charcoal close to GitHub dark mode, with a subtle restrained soft blue radial glow behind the lion; seamless, elegant, no decorations, no stars or particles, no separate cards, no borders. Type hierarchy: huge title 'Avatodo' occupying most of the right-side width; below it a smaller but clearly readable bright-white sentence 'Your voice-driven agent for to-dos and checklists.'; below that, muted light gray text in two lines: 'Runs locally on iPhone. Powered by Meta models.' then 'With you on Apple Watch.' Exact spelling of title: A-v-a-t-o-d-o. Render only these four text elements, no extra label, logo, emoji, badge or caption. Keep the description visually grouped with the title and all text away from the edges. Give the whole layout generous breathing room. At README display width around 900px all text should remain readable. No device mockups, no UI, no new characters. Deliver only the banner image, not a screenshot of a GitHub page.",
-  "license_note": "Generated artwork remains subject to applicable generation-provider terms."
+  "license_note": "Generated artwork remains subject to applicable generation-provider terms.",
+  "encoding": {
+    "format": "WebP",
+    "quality": 92,
+    "method": 6,
+    "resize": "Lanczos, 1800 x 600"
+  },
+  "variants": {
+    "dark": {
+      "asset": "avatodo-banner-dark.webp",
+      "dimensions": [
+        1800,
+        600
+      ],
+      "bytes": 88400,
+      "sha256": "95f6b822f0213208302d2a3185ba66398392ab786d8ecfdbac1b0284f9acff44",
+      "source_sha256": "049b9c90de8628798840158c053e73c51d3967d5d1d5dfc96f3024a9719773bb"
+    },
+    "light": {
+      "asset": "avatodo-banner-light.webp",
+      "dimensions": [
+        1800,
+        600
+      ],
+      "bytes": 84148,
+      "sha256": "09e7982385bd20c813052c4e9c4075ab715839925d17451c29b45700b3d2e793",
+      "source_sha256": "a6dd9165bb459f300d925434d4fd39f81a11ceedc5cc98a1c2ad829ab7bb0519"
+    }
+  },
+  "prompts": {
+    "dark": "Use case: compositing / ads-marketing. Asset type: final wide GitHub README banner for the existing Avatodo project. Create a clean premium horizontal banner, approximately 3:1 aspect ratio (1800 by 600 ideal). Input image 1 is the EXISTING approved Avatodo mascot to reuse as the supporting character insert: a full-body seated golden 3D lion with black sunglasses. Preserve its character identity, exact seated pose, golden fur, sculpted mane, friendly face, black sunglasses, paws and curled tail. Do not redesign the lion. Place the fully visible lion on the left third, with comfortable space above its mane and below its paws. The right two-thirds contains a large crisp white bold modern sans-serif title and the concise product description below it, all left aligned. Background: very dark navy/charcoal close to GitHub dark mode, with a subtle restrained soft blue radial glow behind the lion; seamless, elegant, no decorations, no stars or particles, no separate cards, no borders. Type hierarchy: huge title 'Avatodo' occupying most of the right-side width; below it a smaller but clearly readable bright-white sentence 'Your voice-driven agent for to-dos and checklists.'; below that, muted light gray text in two lines: 'Runs locally on iPhone. Powered by Meta models.' then 'With you on Apple Watch.' Exact spelling of title: A-v-a-t-o-d-o. Render only these four text elements, no extra label, logo, emoji, badge or caption. Keep the description visually grouped with the title and all text away from the edges. Give the whole layout generous breathing room. At README display width around 900px all text should remain readable. No device mockups, no UI, no new characters. Deliver only the banner image, not a screenshot of a GitHub page.",
+    "light": "Use case: precise-object-edit / theme variant. Edit the supplied existing Avatodo README banner into its LIGHT THEME version. Preserve the exact 3:1 landscape composition, the full-body golden 3D seated lion at the left (same identity, face, fur, mane, black sunglasses, paws, tail and pose), the exact position and scale of all elements, and every word of the existing text. Change only the background and typography colors for a light theme: use a clean very pale cool blue/near-white background with a gentle restrained blue halo behind the lion; change the large Avatodo title and bold tagline to very dark charcoal, and the two lower description lines to readable slate gray. Retain generous white space and the original typography. Title exactly 'Avatodo'. Bold line exactly 'Your voice-driven agent for to-dos and checklists.' Lower lines exactly 'Runs locally on iPhone. Powered by Meta models.' and 'With you on Apple Watch.' No additional words, borders, badges, objects or UI. This is the same banner with only theme colors changed. Keep all four text elements crisp and fully visible."
+  }
 }
