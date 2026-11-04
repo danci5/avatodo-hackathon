@@ -2,6 +2,8 @@
 
 A personalized companion for iPhone and Apple Watch, demonstrated with a task agent.
 
+Hackathon source: [danci5/avatodo-hackathon](https://github.com/danci5/avatodo-hackathon), licensed under [Apache-2.0](LICENSE).
+
 **Status: early development.** A standalone local task engine is implemented; the iPhone and Watch UI is in design review. There is no released iPhone or Watch app yet. Planned features below are not claims of working behavior.
 
 ## First release
