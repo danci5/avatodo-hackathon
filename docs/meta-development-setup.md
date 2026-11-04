@@ -8,13 +8,23 @@ Do not paste keys into chats, source, shell command arguments or project files. 
 
 Open Avatodo's **Settings**, enter your own key and choose **Save key**, then review **Data sharing with Meta** and explicitly allow requests. Build 2 requires fresh permission for its updated 18+ notice. The key is stored in iPhone Keychain, with replacement/removal controls. Saving confirms storage only. In build 3, choose **Check connection** to authenticate against the model catalog without sending notes or generating content. A listed model does not prove that inference or image creation will succeed. HTTP 401 means the key was rejected; HTTP 403 means Meta denied the request, which can involve account/model permissions or the network. The iPhone reads the key for direct Meta requests; Watch payloads contain no key. See [native app setup](native-app.md).
 
+### Copying your own development key to iPhone
+
+If you already saved your own key in Mac Keychain, select its item in **Keychain Access** and choose **Copy Password to Clipboard**. Generic Copy can copy the item’s name instead of its secret value; **Show Password** is not required for this copy action. Complete any macOS authentication prompt yourself, then paste directly into Avatodo’s secure key field on the actual iPhone and choose Save/Replace key.
+
+For [Universal Clipboard](https://support.apple.com/en-nz/102430), keep the Mac and iPhone nearby, signed in to the same Apple Account, with Wi-Fi, Bluetooth and Handoff enabled. The Mac development Keychain item is not automatically synchronized to Avatodo’s iPhone Keychain.
+
+Choose **Check connection** after saving. “Key accepted; Muse Spark and Muse Image are listed” verifies catalog authentication for the phone’s stored key. Then try a separate **Talk → Done** request to verify actual reasoning and voice. A catalog pass alone does not verify speech, inference, a saved note or Watch operation.
+
+On 4 November 2026, the owner reported HTTP 401 on the actual iPhone, then confirmed both required models were listed after replacing the saved value using the copy/paste steps above. That is a user-reported catalog-authentication pass; a complete Talk/Done response and saved-note test remain pending. No key value was read out or added to the release.
+
 ## Mac checks
 
 The Mac development item is separate from iPhone Keychain:
 
 1. Run `zsh scripts/configure-meta-key.command` in Terminal. Enter the API key at the hidden password prompt, then enter it again. The prompt calls it a password because it is storing secret data; enter the Meta key, not the Mac login password. The helper stores/replaces service `app.avatodo.development.meta`, account `avatodo` in macOS Keychain and sends no request.
-2. Run `python3 scripts/check-meta-access.py` for the model catalog. It prints status/model availability only; the key is read in memory and headers pass through stdin.
-3. Run `swift run AvatodoProbe --run-live` deliberately for the real shared Swift agent/store integration check. It uses fictional notes, caps requests at sixteen and writes a sanitized result under ignored `artifacts/`. Running without `--run-live` prints help and sends no request. See [recorded live evidence](shared-swift-live-evidence.md).
+2. Run `swift run AvatodoProbe --check-access` to check catalog authentication with the production Swift client, without notes or inference. It prints status/model availability only. The earlier `python3 scripts/check-meta-access.py` catalog check remains available; its key is read in memory and headers pass through stdin.
+3. Run `swift run AvatodoProbe --run-live` deliberately for the real shared Swift agent/store integration check. It uses fictional notes, caps requests at sixteen and writes a sanitized result under ignored `artifacts/`. Running without an explicit `--run-live` or `--check-access` flag prints help and sends no request. See [recorded live evidence](shared-swift-live-evidence.md).
 4. `python3 scripts/verify-meta-models.py --run-live` retains the earlier fictional Python tool-fixture check. Add `--include-images` only when you intend to send image-generation/reference-edit requests. Those consume additional credits and are not required for the local unit checks. See [access evidence](meta-access-evidence.md).
 
 The two live-check routes establish different evidence: the Swift probe exercises the real shared agent and store; the earlier fixture verifies API access and image endpoints. Neither alone proves the complete native app or Watch flow.
