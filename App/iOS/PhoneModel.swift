@@ -212,19 +212,23 @@ import AvatodoCore
                 try await recognition.start { [weak self] text in
                     guard let self, self.requestID == id, self.state.phase == .listening else { return }
                     self.state.text = text; self.publish()
-                } failed: { [weak self] in
-                    guard let self, self.requestID == id, self.state.phase == .listening else { return }
-                    self.cancel(message: AudioFailure.unavailable.localizedDescription)
+                } failed: { [weak self] failure in
+                    guard let self, self.requestID == id,
+                          self.state.phase == .listening || self.state.phase == .thinking else { return }
+                    self.cancel(message: failure.localizedDescription)
                 }
                 try Task.checkCancellation()
                 guard requestID == id else { return }
-                state.speechReady = true; acceptingAudio = fromWatch
+                state.speechReady = true; acceptingAudio = true
                 setPhase(.listening, text: "")
                 if !fromWatch {
                     try await microphone.start { [weak self] data, rate in
-                        guard let self, self.requestID == id, self.state.phase == .listening else { return }
+                        guard let self, self.requestID == id, self.acceptingAudio else { return }
                         do { try self.recognition.append(data, sampleRate: rate) }
                         catch { self.audioFailed = true; self.cancel(message: error.localizedDescription) }
+                    } failed: { [weak self] failure in
+                        guard let self, self.requestID == id else { return }
+                        self.audioFailed = true; self.cancel(message: failure.localizedDescription)
                     }
                 }
                 captureTimer = Task { [weak self] in
@@ -233,7 +237,8 @@ import AvatodoCore
                     // A bounded recording ends capture, never silently commits a partial request.
                     self?.cancel(message: "Recording reached its limit. Try a shorter request or type on iPhone.")
                 }
-            } catch is CancellationError { finishCancelled() } catch { fail(error) }
+            } catch is CancellationError { if requestID == id { finishCancelled() } }
+            catch { if requestID == id { fail(error) } }
         }
     }
     func submitText(_ text: String, scope: UUID? = nil, fromWatch: Bool = false, id: UUID = UUID()) {
@@ -252,11 +257,13 @@ import AvatodoCore
     }
     func finish(packetCount: Int? = nil) {
         guard state.phase == .listening, work == nil, let id = requestID else { return }
-        captureTimer?.cancel(); microphone.stop()
+        captureTimer?.cancel()
         setPhase(.thinking, caption: "Finishing transcription…")
         work = Task { [weak self] in
             guard let self else { return }
-            defer { work = nil }
+            defer {
+                if requestID == id { microphone.releaseSession(); work = nil }
+            }
             do {
                 if watchOrigin {
                     guard let packetCount, packetCount > 0, packetCount <= 1800 else { throw AudioFailure.incompleteAudio }
@@ -264,15 +271,16 @@ import AvatodoCore
                         try await Task.sleep(for: .milliseconds(100))
                     }
                     guard nextFrame == packetCount, frames.isEmpty, !audioFailed else { throw AudioFailure.incompleteAudio }
-                }
+                } else { try microphone.finishCapture() }
                 guard !audioFailed else { throw AudioFailure.incompleteAudio }
                 acceptingAudio = false
                 let text = try await recognition.finish()
+                microphone.releaseSession()
                 try Task.checkCancellation()
                 guard requestID == id else { return }
                 await respond(text, id: id)
             } catch is CancellationError { if requestID == id { finishCancelled() } }
-            catch { fail(error) }
+            catch { if requestID == id { fail(error) } }
         }
     }
     private func respond(_ text: String, id: UUID) async {

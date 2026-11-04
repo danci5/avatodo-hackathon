@@ -17,10 +17,12 @@ import WatchKit
     private var spokenRequest: UUID?
     private var awaitingStart = false
     private var awaitingStop = false
+    private var awaitingFinish = false
     private var timeout: Task<Void, Never>?
     private var expiry: Task<Void, Never>?
     private var undoTimer: Task<Void, Never>?
     private var microphoneTask: Task<Void, Never>?
+    private var microphoneGeneration = UUID()
     private var waitingCharacter: (Data, CharacterManifest)?
     private var chunkAssembler = CharacterChunkAssembler()
     private var selectedCharacterID: UUID?
@@ -66,7 +68,7 @@ import WatchKit
         guard reachable else { unavailable(); return }
         guard state.hasDataSharingConsent == true else { consentRequired(); return }
         voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
-        let id = UUID(); localRequest = id; packetCount = 0; awaitingStart = true; awaitingStop = false
+        let id = UUID(); localRequest = id; packetCount = 0; awaitingStart = true; awaitingStop = false; awaitingFinish = false
         state.requestID = id; state.replyDevice = "watch"
         state.phase = .thinking; state.caption = "Connecting…"; state.text = ""
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
@@ -77,16 +79,29 @@ import WatchKit
         guard reachable else { unavailable(); return }
         guard state.hasDataSharingConsent == true else { consentRequired(); return }
         voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
-        let id = UUID(); localRequest = id; awaitingStart = true; awaitingStop = false
+        let id = UUID(); localRequest = id; awaitingStart = true; awaitingStop = false; awaitingFinish = false
         state.requestID = id; state.replyDevice = "watch"
         state.phase = .thinking; state.caption = "Thinking…"; state.text = text
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         command(.text, text: text); waitForReply(seconds: 90)
     }
     func finish() {
-        guard capturing else { return }
-        stopCapture(); command(.finish, count: packetCount)
-        state.phase = .thinking; state.caption = "Thinking…"; waitForReply(seconds: 90)
+        guard capturing, let id = localRequest else { return }
+        awaitingFinish = true
+        do {
+            // Drain while this turn still accepts packets, before sending its final count.
+            try microphone.finishCapture()
+            guard capturing, localRequest == id else { return }
+            stopCapture(); command(.finish, count: packetCount)
+            state.phase = .thinking; state.caption = "Thinking…"; waitForReply(seconds: 90)
+        } catch is CancellationError { }
+        catch {
+            guard localRequest == id else { return }
+            awaitingFinish = false
+            let message = error.localizedDescription
+            stopCapture(); command(.cancel, text: message)
+            state.phase = .error; state.caption = "Couldn’t listen"; state.text = message
+        }
     }
     func undo() {
         guard state.phase.isIdle, let id = state.undoReceiptID else { return }
@@ -122,6 +137,9 @@ import WatchKit
         // A late status for the previous turn cannot replace a just-started recording.
         if awaitingStart, incoming.requestID != localRequest, incoming.phase.isIdle, incoming.phase != .error { return }
         if awaitingStop, incoming.requestID == localRequest, incoming.phase == .speaking { return }
+        // Late partial/state delivery cannot restart capture after local Done.
+        if awaitingFinish, incoming.requestID == localRequest, incoming.phase == .listening { return }
+        if incoming.requestID == localRequest, incoming.phase != .listening { awaitingFinish = false }
         if incoming.requestID == localRequest || incoming.phase == .error { awaitingStart = false }
         if incoming.phase.isIdle { awaitingStop = false }
         state = incoming
@@ -134,31 +152,39 @@ import WatchKit
         if incoming.phase == .listening, !capturing, microphoneTask == nil {
             timeout?.cancel(); capturing = true
             let id = localRequest
+            let captureToken = UUID(); microphoneGeneration = captureToken
             microphoneTask = Task { [weak self] in
                 guard let self else { return }
-                defer { microphoneTask = nil }
+                defer { if microphoneGeneration == captureToken { microphoneTask = nil } }
                 do {
                     try await microphone.start { [weak self] samples, rate in
-                        guard let self, capturing, localRequest == id, let id else { return }
+                        guard let self, capturing, microphoneGeneration == captureToken, localRequest == id, let id else { return }
                         // Keep each WC message below its size limit, including JSON/base64 overhead.
                         for offset in stride(from: 0, to: samples.count, by: 24_000) {
                             let bytes = samples.subdata(in: offset..<min(offset+24_000, samples.count))
                             link.send(VoiceFrame(requestID: id, sequence: packetCount, sampleRate: rate, samples: bytes), type: "audio")
                             packetCount += 1
                         }
+                    } failed: { [weak self] failure in
+                        guard let self, capturing, microphoneGeneration == captureToken, localRequest == id else { return }
+                        let message = failure.localizedDescription
+                        stopCapture(); command(.cancel, text: message)
+                        state.phase = .error; state.caption = "Couldn’t listen"; state.text = message
                     }
                     try Task.checkCancellation()
-                    guard capturing, localRequest == id else { microphone.stop(); return }
+                    guard localRequest == id, microphoneGeneration == captureToken else { return }
+                    guard capturing else { microphone.stop(); return }
                     timeout = Task { [weak self] in
                         try? await Task.sleep(for: .seconds(30))
-                        guard !Task.isCancelled, let self, capturing else { return }
+                        guard !Task.isCancelled, let self, capturing, microphoneGeneration == captureToken, localRequest == id else { return }
                         let message = "Try a shorter request. Nothing was sent to the agent."
                         stopCapture(); command(.cancel, text: message); state.phase = .error; state.caption = "Recording ended"
                         state.text = message
                     }
                 } catch is CancellationError {
-                    microphone.stop()
+                    if localRequest == id, microphoneGeneration == captureToken { microphone.stop() }
                 } catch {
+                    guard localRequest == id, microphoneGeneration == captureToken else { return }
                     let message = error.localizedDescription
                     stopCapture(); command(.cancel, text: message); state.phase = .error; state.caption = "Couldn’t listen"; state.text = message
                 }
@@ -206,14 +232,16 @@ import WatchKit
         }
     }
     private func stopCapture() {
-        capturing = false; microphone.stop(); microphoneTask?.cancel(); timeout?.cancel()
+        capturing = false; microphoneGeneration = UUID()
+        let task = microphoneTask; microphoneTask = nil
+        microphone.stop(); task?.cancel(); timeout?.cancel()
     }
     private func consentRequired() {
         state.phase = .error; state.caption = "Review on iPhone"
         state.text = "Open Avatodo Settings on iPhone and allow Meta data sharing before talking."
     }
     private func unavailable() {
-        stopCapture(); awaitingStart = false; awaitingStop = false
+        stopCapture(); awaitingStart = false; awaitingStop = false; awaitingFinish = false
         state.phase = .error; state.caption = "iPhone unavailable"
         state.text = "Open Avatodo on your iPhone, then try again. Check Notes for any saved changes."
     }

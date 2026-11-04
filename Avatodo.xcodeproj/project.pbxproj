@@ -16,6 +16,7 @@
 		25BAB5922280AE4CF1347640 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
 		282AF9F9EB2F8AF53DB9681D /* AvatodoCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FD2E87FA4DD33E23B471F5 /* AvatodoCore */; };
 		288983BADB3522F718D5359C /* AvatodoWatch.app in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = B6494A9E74BF53E3432A3B41 /* AvatodoWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		33264C64669354732BAD6720 /* AudioPacketQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */; };
 		3963CECF9169BC715C103BB3 /* CompanionSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */; };
 		46770E5F9A266B9C1553AC5E /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F74FDB4EDA30BB51B82085F /* KeychainStore.swift */; };
 		47774E76A3E02A68EB1B1224 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
@@ -29,6 +30,7 @@
 		92C051E6C00012CFB65830FA /* PhoneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84AA33C5C2802CA212937B76 /* PhoneModel.swift */; };
 		96505ADCAFBC30959213B2E2 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED724BB1E90942C940650053 /* CharacterStore.swift */; };
+		A2BAF8068CE51D4D86BEF5EE /* AudioPacketQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */; };
 		BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E230105EAA6DBF31D04B2876 /* Assets.xcassets */; };
 		D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
@@ -65,6 +67,7 @@
 
 /* Begin PBXFileReference section */
 		03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionState.swift; sourceTree = "<group>"; };
+		0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPacketQueue.swift; sourceTree = "<group>"; };
 		0F40326A4592B3BDE6A623C5 /* Avatodo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Avatodo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		167F6A2AD1043E4C6628B69C /* WatchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchModel.swift; sourceTree = "<group>"; };
 		3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopmentBootstrap.swift; sourceTree = "<group>"; };
@@ -122,6 +125,7 @@
 		74191EBAE8E360147E97B7A4 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */,
 				DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */,
 				ED724BB1E90942C940650053 /* CharacterStore.swift */,
 				E231E435EAA0748E3E4B29BB /* CompanionLink.swift */,
@@ -294,6 +298,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				33264C64669354732BAD6720 /* AudioPacketQueue.swift in Sources */,
 				13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */,
 				179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */,
 				1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */,
@@ -315,6 +320,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2BAF8068CE51D4D86BEF5EE /* AudioPacketQueue.swift in Sources */,
 				4F5B5E8F4F1B106E86204B88 /* AvatodoWatchApp.swift in Sources */,
 				BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */,
 				9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */,
@@ -413,7 +419,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -479,7 +485,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

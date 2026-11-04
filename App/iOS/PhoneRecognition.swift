@@ -1,43 +1,42 @@
 import Foundation
 @preconcurrency import Speech
 @preconcurrency import AVFoundation
+import AvatodoCore
 
 @MainActor final class PhoneRecognition {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognition: SFSpeechRecognitionTask?
+    private var recognizer: SFSpeechRecognizer?
     private var generation = UUID()
-    private var final = false
-    private(set) var text = ""
-    private(set) var failure: String?
+    private var result = SpeechFinalization()
     private(set) var onDevice = false
 
-    func start(partial: @escaping @MainActor (String) -> Void, failed: @escaping @MainActor () -> Void) async throws {
+    func start(partial: @escaping @MainActor (String) -> Void,
+               failed: @escaping @MainActor (SpeechRecognitionFailure) -> Void) async throws {
         cancel()
         let token = UUID(); generation = token
         let authorization = await Self.authorization()
         try Task.checkCancellation()
         guard generation == token else { throw CancellationError() }
         guard authorization == .authorized else { throw AudioFailure.speechDenied }
-        guard let recognizer = SFSpeechRecognizer(locale: .current), recognizer.isAvailable else { throw AudioFailure.unavailable }
+        guard let recognizer = SFSpeechRecognizer(locale: .current), recognizer.isAvailable else { throw SpeechRecognitionFailure.unavailable }
+        self.recognizer = recognizer
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         request.taskHint = .dictation
         onDevice = recognizer.supportsOnDeviceRecognition
         request.requiresOnDeviceRecognition = onDevice
         self.request = request
-        final = false; text = ""; failure = nil
+        self.result = SpeechFinalization()
         recognition = recognizer.recognitionTask(with: request) { @Sendable [weak self] result, error in
             let words = result?.bestTranscription.formattedString
             let done = result?.isFinal ?? false
-            let hasError = error != nil
+            let issue = error.map { SpeechServiceIssue(domain: ($0 as NSError).domain, code: ($0 as NSError).code) }
             Task { @MainActor [weak self] in
                 guard let self, self.generation == token else { return }
-                if let words { self.text = words; partial(words) }
-                if done { self.final = true }
-                if hasError && !self.final {
-                    self.failure = "Speech recognition ended. Try again or type your request."
-                    failed()
-                }
+                self.result.receive(text: words, isFinal: done, issue: issue)
+                if let failure = self.result.failure { failed(failure); return }
+                if let words { partial(words) }
             }
         }
     }
@@ -63,27 +62,30 @@ import Foundation
                 channel[index] = Float(Int16(littleEndian: sample)) / 32_768
             }
         }
+        try result.submitAudio(sampleCount: Int(buffer.frameLength))
         request.append(buffer)
     }
     func finish() async throws -> String {
-        request?.endAudio()
         let token = generation
-        for _ in 0..<30 {
+        // Cleanup belongs to this turn only; cancellation must not tear down a new one.
+        defer { if generation == token { cancel() } }
+        guard let request, let recognition else { throw SpeechRecognitionFailure.unavailable }
+        guard result.submittedSamples > 0 else { throw SpeechRecognitionFailure.noAudio }
+        request.endAudio()
+        recognition.finish()
+        for _ in 0..<100 {
+            try Task.checkCancellation()
             guard generation == token else { throw CancellationError() }
-            if final || failure != nil { break }
+            if result.resolved { break }
             try await Task.sleep(for: .milliseconds(100))
         }
+        try Task.checkCancellation()
         guard generation == token else { throw CancellationError() }
-        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let complete = final && failure == nil
-        cancel()
-        // An interrupted recognizer or a timed-out partial must never become a tool request.
-        guard complete else { throw AudioFailure.unavailable }
-        guard !words.isEmpty else { throw AudioFailure.noWords }
-        return words
+        return try result.finalizedText()
     }
     func cancel() {
         generation = UUID(); recognition?.cancel(); recognition = nil
-        request?.endAudio(); request = nil
+        request?.endAudio(); request = nil; recognizer = nil
+        result = SpeechFinalization(); onDevice = false
     }
 }
