@@ -23,6 +23,14 @@ public protocol LanguageModel: Sendable {
     func complete(messages: [JSONValue], tools: [JSONValue], key: String) async throws -> JSONValue
 }
 
+public enum MetaReasoningModel: String, CaseIterable, Codable, Sendable {
+    case spark = "muse-spark-1.3"
+    case wonder = "muse-wonder-1.0"
+
+    public var title: String { self == .spark ? "Muse Spark" : "Muse Wonder" }
+    public init(savedValue: String?) { self = savedValue.flatMap(Self.init(rawValue:)) ?? .spark }
+}
+
 public struct MetaAccessCheck: Equatable, Sendable {
     public let languageModelAvailable: Bool
     public let imageModelAvailable: Bool
@@ -46,12 +54,17 @@ private struct EphemeralMetaTransport: MetaTransport {
 }
 
 public struct MetaClient: LanguageModel, Sendable {
-    public static let languageModel = "muse-spark-1.3"
+    public static let languageModel = MetaReasoningModel.spark.rawValue
     public static let imageModel = "muse-image-1.0"
+    public let reasoningModel: MetaReasoningModel
     private let transport: any MetaTransport
 
-    public init() { transport = EphemeralMetaTransport() }
-    public init(transport: any MetaTransport) { self.transport = transport }
+    public init(reasoningModel: MetaReasoningModel = .spark) {
+        self.reasoningModel = reasoningModel; transport = EphemeralMetaTransport()
+    }
+    public init(reasoningModel: MetaReasoningModel = .spark, transport: any MetaTransport) {
+        self.reasoningModel = reasoningModel; self.transport = transport
+    }
 
     /// Verifies catalog authentication and listed models, without inference or note context.
     /// A listed model is not a guarantee that a later inference request will be permitted.
@@ -60,13 +73,13 @@ public struct MetaClient: LanguageModel, Sendable {
         guard let entries = response["data"].array,
               entries.allSatisfy({ $0["id"].string != nil }) else { throw MetaError.invalidResponse }
         let models = Set(entries.compactMap { $0["id"].string })
-        return MetaAccessCheck(languageModelAvailable: models.contains(Self.languageModel),
+        return MetaAccessCheck(languageModelAvailable: models.contains(reasoningModel.rawValue),
                                imageModelAvailable: models.contains(Self.imageModel))
     }
 
     public func complete(messages: [JSONValue], tools: [JSONValue], key: String) async throws -> JSONValue {
         try await request(path: "chat/completions", payload: .object([
-            "model": .string(Self.languageModel), "messages": .array(messages),
+            "model": .string(reasoningModel.rawValue), "messages": .array(messages),
             "tools": .array(tools), "parallel_tool_calls": .bool(false),
             "reasoning_effort": .string("low"), "max_completion_tokens": .number(1600)
         ]), key: key)
@@ -88,6 +101,45 @@ public struct MetaClient: LanguageModel, Sendable {
         guard let item = response["data"].array?.first,
               let b64 = item["b64_json"].string, let data = Data(base64Encoded: b64),
               data.count <= 16_000_000 else { throw MetaError.invalidResponse }
+        return data
+    }
+
+    public func generateCharacterAnimations(reference: Data, key: String) async throws -> Data {
+        guard reference.count <= 4_000_000 else { throw MetaError.invalidResponse }
+        let prompt = """
+        Create a production animation sprite sheet of EXACTLY the SAME original 3D companion in
+        this reference. Preserve its identity, colors, materials, accessories and proportions.
+        Landscape canvas, EXACTLY FIVE COLUMNS AND FOUR ROWS: TWENTY equal cells. No grid
+        lines, labels, numbers, text or borders. Pure white background. One full-body character per
+        cell, same front-facing camera, lighting, body scale and horizontal center. Keep five percent
+        white margin on every side of every cell. Feet share a ground line; head scale stays fixed.
+        Preserve the reference anatomy and accessories. Neighboring frames differ only a little.
+        Adapt gestures to this character's existing anatomy. If it has no ears, listening means an
+        attentive head/body tilt. If it has no arms/legs, dancing is a clear whole-body wiggle;
+        do not invent limbs. If it has no visible mouth, use subtle existing face/head expressions
+        for speaking. Never add human anatomy, a mouth, ears or accessories absent in the reference.
+        Row 1 (FIVE cells): neutral seated friendly smile; attentive listening with one hand/paw
+        gently near the ear; thoughtful hand/paw at chin; neutral seated blink; relaxed happy smile.
+        Row 2 (FIVE cells): mouth-only speaking sequence. COPY the SAME neutral seated body,
+        paws DOWN and head placement in ALL FIVE cells. Change ONLY mouth: closed, barely open,
+        moderately open, barely open, closed smile. NO paw near chin, NO paw movement in this row.
+        Row 3 (FIVE cells): ONE clearly recognizable standing dance loop, arms/paws raised and
+        feet doing alternating small steps. First: lean left with left foot forward. Second: pass
+        through center with knees slightly bent. Third: lean right with right foot forward. Fourth:
+        pass through center with arms/paws raised. Fifth: return close to the first left-step pose.
+        Keep head scale consistent; do not replace dancing with seated waving. No camera movement.
+        Row 4 (FIVE cells): gentle giggle sequence. Identical seated body with paws down throughout:
+        small smile, beginning a giggle, warm open-mouth laugh, easing to a giggle, relaxed smile.
+        Count TWENTY characters: FOUR separate rows with FIVE characters in EACH row. Not 4x4.
+        One consistent premium 3D character. No devices, UI, scenery, extra props or extra characters.
+        """
+        let response = try await request(path: "images/edits", payload: .object([
+            "model": .string(Self.imageModel), "prompt": .string(prompt), "size": .string("1280x1024"),
+            "images": .array([.object(["image_url": .string("data:image/png;base64," + reference.base64EncodedString())])]),
+            "n": .number(1), "output_format": .string("png"), "response_format": .string("b64_json")
+        ]), key: key, timeout: 180)
+        guard let value = response["data"].array?.first?["b64_json"].string,
+              let data = Data(base64Encoded: value), data.count <= 16_000_000 else { throw MetaError.invalidResponse }
         return data
     }
 

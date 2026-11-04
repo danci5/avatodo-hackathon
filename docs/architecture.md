@@ -10,7 +10,7 @@ The agent executes inside the iPhone app. Meta supplies remote language reasonin
 | Watch app | Same companion, push-to-talk, transient captions, local speech playback and cached character artwork |
 | Local task store | Typed mutations, stable note/item IDs, revision checks, atomic snapshots and retry/Undo receipts |
 | CompanionAgent | Bounded tool loop, temporary multi-turn context, note selection, strict note scope and truthful outcomes |
-| MetaClient | Direct `muse-spark-1.3` language/tool requests and `muse-image-1.0` artwork requests |
+| MetaClient | Direct selected `muse-spark-1.3` (default) or `muse-wonder-1.0` language/tool requests and `muse-image-1.0` artwork requests |
 | Apple speech adapters | iPhone recognition and active-device speech synthesis |
 | Watch Connectivity | Bounded commands/audio, ordered transient state and validated character files; no API key |
 | SwiftUI companion runtime | Cached artwork with local phase-driven motion and reduced-motion support |
@@ -52,11 +52,17 @@ The included 3D lion and blue-lion brand icon are bundled, so viewing the defaul
 
 Custom creation follows this source path:
 
-Description → direct Muse Image request → local foreground separation/crop/resize → validated PNG and manifest → cached native display → Watch transfer.
+Description → direct Muse Image artwork request → local foreground separation → reference-image animation-sheet request → local gutter detection, frame preparation and validation → cached PNG atlas and manifest → Watch transfer.
 
 Local preparation uses Apple Vision where available, with deterministic edge-connected white removal as a fallback. The manifest includes character identity, hash and provenance. Background file transfer is supplemented by acknowledged 24 KB foreground chunks while reachable. Assembly is bounded to one image of at most 4 MB; Watch validates the final hash and current selected character before installation. Default resets and newer selections reject stale transfers. The same prepared image is animated locally through gentle breathing, tilt and phase-driven motion, respecting Reduce Motion.
 
-The current baseline uses one canonical image and procedural motion. Generated expression frames, lip synchronization and generated video are not implemented claims. A real in-app Muse Image request, local preparation and matching custom PNG caches/display on both paired simulators have passed. This does not establish physical-device or background-transfer reliability.
+The next-release source uses a 20-frame atlas for new companions, with legacy single images and earlier layouts still readable. Each state has an assigned visual, and invalid sheets leave the base artwork usable. Local code blends state poses over 240 ms and runs subtle breathing, tilt and reaction motion; it is not a 3D rig, phoneme-driven lip synchronization or generated video. Tap the companion to dance. Laughing is queued for an explicit laugh request or requested joke; failed note changes suppress celebratory reactions. Reduce Motion is static, off-screen timelines pause and gallery thumbnails do not animate.
+
+The cutter finds low-ink gutters near the expected grid boundaries to tolerate generated layout variation, then masks/crops each character and normalizes its baseline. Obvious body cuts fail validation. The default lion, a separately generated crocodile and a separately generated robot have passed preparation/cache/decode checks. The latter two used the production Meta client and preparation code on Mac, not a physical phone. Physical creation, transfer and background reliability remain separate acceptance gates.
+
+## Optional Google Drive publishing
+
+The phone can authorize the user's personal Google account and publish Markdown copies directly to Drive. The local store stays authoritative; no cloud edits are imported and local deletion does not delete cloud copies. Google credentials never cross the Watch link or enter Meta requests. See [Drive setup and limits](google-drive.md).
 
 ## Public boundaries
 

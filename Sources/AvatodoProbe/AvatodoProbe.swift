@@ -5,11 +5,19 @@ import AvatodoCore
 /// The credential is read into memory from the development Mac Keychain, never printed.
 @main struct AvatodoProbe {
     static func main() async {
+        let arguments = CommandLine.arguments
+        var selection = MetaReasoningModel.spark
+        if let index = arguments.firstIndex(of: "--model") {
+            guard arguments.indices.contains(index + 1), let parsed = MetaReasoningModel(rawValue: arguments[index + 1]) else {
+                print("Choose --model muse-spark-1.3 or --model muse-wonder-1.0."); exit(1)
+            }
+            selection = parsed
+        }
         if CommandLine.arguments.contains("--check-access") {
             do {
-                let access = try await MetaClient().checkAccess(key: developmentKey())
+                let access = try await MetaClient(reasoningModel: selection).checkAccess(key: developmentKey())
                 print("Mac catalog authentication: PASS.")
-                print("Muse Spark listed: \(access.languageModelAvailable). Muse Image listed: \(access.imageModelAvailable).")
+                print("\(selection.title) listed: \(access.languageModelAvailable). Muse Image listed: \(access.imageModelAvailable).")
                 print("No notes, inference or image requests sent. This does not verify the iPhone’s stored key.")
             } catch let error as MetaError {
                 print("Mac catalog check: " + (error.errorDescription ?? "Request failed.")); exit(1)
@@ -25,7 +33,6 @@ import AvatodoCore
             print("Uses your saved development Meta key and makes up to 16 billable model requests with fictional notes.")
             return
         }
-        let arguments = CommandLine.arguments
         let output: URL
         if let index = arguments.firstIndex(of: "--output"), arguments.indices.contains(index + 1) {
             output = URL(fileURLWithPath: arguments[index + 1])
@@ -33,8 +40,8 @@ import AvatodoCore
             output = URL(fileURLWithPath: "artifacts/meta-swift-check/results.json")
         }
         let started = Date()
-        var report = Report(startedAt: started)
-        let model = BoundedProbeModel()
+        var report = Report(startedAt: started, model: selection.rawValue)
+        let model = BoundedProbeModel(selection: selection)
         do {
             let key = try developmentKey()
             let folder = output.deletingLastPathComponent().appendingPathComponent("fixture-" + UUID().uuidString)
@@ -153,7 +160,7 @@ private struct Report: Encodable {
     var stage = "key_access"
     var failure: String?
     var checks: [Check] = []
-    let model = MetaClient.languageModel
+    let model: String
     let endpoint = "https://api.meta.ai/v1/chat/completions"
     let implementation = "AvatodoCore MetaClient + CompanionAgent + LocalTaskStore"
     let inputData = "fictional grocery fixture only"
@@ -170,10 +177,12 @@ private enum ProbeFailure: Error {
 }
 
 private actor BoundedProbeModel: LanguageModel {
+    let selection: MetaReasoningModel
+    init(selection: MetaReasoningModel) { self.selection = selection }
     private(set) var requestCount = 0
     func complete(messages: [JSONValue], tools: [JSONValue], key: String) async throws -> JSONValue {
         guard requestCount < 16 else { throw MetaError.toolLimit }
         requestCount += 1
-        return try await MetaClient().complete(messages: messages, tools: tools, key: key)
+        return try await MetaClient(reasoningModel: selection).complete(messages: messages, tools: tools, key: key)
     }
 }

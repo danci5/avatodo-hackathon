@@ -17,5 +17,21 @@
     "selected": "Icon A, lion on blue",
     "preparation": "Local resize to 1024px"
   },
-  "license_note": "Generated artwork remains subject to applicable generation-provider terms; not third-party brand artwork. No affiliation with eyewear or platform brands."
+  "license_note": "Generated artwork remains subject to applicable generation-provider terms; not third-party brand artwork. No affiliation with eyewear or platform brands.",
+  "default_companion_animation": {
+    "model": "muse-image-1.0",
+    "created": "2026-11-04",
+    "description": "Same approved 3D lion; 20 local frames with state expressions, speech, standing dance and laugh",
+    "preparation": "Reference-image pose sheets generated with Muse Image. Local Apple Vision foreground masking, edge cleanup, normalization and PNG atlas packing. Standing dance frames reuse the earlier generated lion dance loop; its final pose repeats the first to close the cycle. Native movement and 240 ms transitions are procedural, not generated video.",
+    "prepared_dimensions": [
+      1600,
+      1280
+    ],
+    "frame_dimensions": [
+      320,
+      320
+    ],
+    "frame_count": 20,
+    "prepared_sha256": "63357b490fb734d8c86a5c897fbb646b1ab4a9a7ba4920b26d6d0850ceba336a"
+  }
 }

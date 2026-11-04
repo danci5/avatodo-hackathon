@@ -12,22 +12,30 @@
 		0791EC76EB8583DD04E22FD4 /* CharacterLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1D48D3C7F72610DC2122C8 /* CharacterLibrary.swift */; };
 		09BBA5ADE0532D1495A87751 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		101672814772F60BF4A3B2BB /* DevelopmentBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */; };
+		10FB044FB4FDE5A6DB3FB5E1 /* CharacterAnimationFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */; };
+		132EB0897ED0BBC37670760C /* GoogleDriveSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D4B26750DBF53A17E54810 /* GoogleDriveSync.swift */; };
 		135628590A2AEA6776553D57 /* CharacterLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1D48D3C7F72610DC2122C8 /* CharacterLibrary.swift */; };
 		13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7929606CD93008BF8FB35951 /* AvatodoApp.swift */; };
 		179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED724BB1E90942C940650053 /* CharacterStore.swift */; };
+		1D867838D94FF1F3A7ECD46E /* ReplyAudioWire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A55234BFDB05ADAF96B5CC /* ReplyAudioWire.swift */; };
 		25BAB5922280AE4CF1347640 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
 		282AF9F9EB2F8AF53DB9681D /* AvatodoCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FD2E87FA4DD33E23B471F5 /* AvatodoCore */; };
 		288983BADB3522F718D5359C /* AvatodoWatch.app in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = B6494A9E74BF53E3432A3B41 /* AvatodoWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		33264C64669354732BAD6720 /* AudioPacketQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */; };
 		3963CECF9169BC715C103BB3 /* CompanionSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */; };
 		3977676D5EE01E1E6D655162 /* SpeechPlaybackMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C853D0A9F6E3DD3E4BDF20F1 /* SpeechPlaybackMonitor.swift */; };
+		3DF95340C1A90311D34BD871 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EC82811B2FF9FB43E7CFCA2F /* GoogleSignIn */; };
 		46770E5F9A266B9C1553AC5E /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F74FDB4EDA30BB51B82085F /* KeychainStore.swift */; };
 		47774E76A3E02A68EB1B1224 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
+		4E777B34D44999E5F6DACBEC /* CompanionMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4EB17571290B35D30404E3 /* CompanionMotion.swift */; };
 		4F5B5E8F4F1B106E86204B88 /* AvatodoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */; };
 		585603B61A805F5DA591E71E /* PhoneViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763644AB913F6546845CC3C7 /* PhoneViews.swift */; };
 		610824378E9FB6D25802B817 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167F6A2AD1043E4C6628B69C /* WatchModel.swift */; };
 		6928B4194D43E74BA50D7FF8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F209C7E8820873050F38C19B /* PrivacyInfo.xcprivacy */; };
+		6F777203D1607B856B25F3E8 /* ReplyAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80ACB6EB4D5C5B2EF0540A2 /* ReplyAudioPlayer.swift */; };
+		7F05436AF5927D8540F3876C /* ReplyAudioWire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A55234BFDB05ADAF96B5CC /* ReplyAudioWire.swift */; };
+		7FA8D11D9126BAC195ABD4EB /* DefaultLionAtlas.png in Resources */ = {isa = PBXBuildFile; fileRef = 1929F23DAE850BD5A002DAF9 /* DefaultLionAtlas.png */; };
 		83667AD0D9EA9D20EE617CDE /* SpeechVoiceSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */; };
 		887A5B0D1C773CC91EE3327C /* CompanionLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = E231E435EAA0748E3E4B29BB /* CompanionLink.swift */; };
 		8C8CA7FF17098456BCA88280 /* MetaDataSharingConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA85DE00B51690DACD678F80 /* MetaDataSharingConsent.swift */; };
@@ -35,10 +43,16 @@
 		92C051E6C00012CFB65830FA /* PhoneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84AA33C5C2802CA212937B76 /* PhoneModel.swift */; };
 		96505ADCAFBC30959213B2E2 /* CompanionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */; };
 		9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED724BB1E90942C940650053 /* CharacterStore.swift */; };
+		A282B2D2B58DB5E9139D5190 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = A0E33ABDECF5E519A83B3EE8 /* GoogleSignInSwift */; };
 		A2BAF8068CE51D4D86BEF5EE /* AudioPacketQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */; };
+		A2E74427F9C594856A517636 /* DefaultLionAtlas.png in Resources */ = {isa = PBXBuildFile; fileRef = 1929F23DAE850BD5A002DAF9 /* DefaultLionAtlas.png */; };
 		AD88F7653A592890FEF8B68A /* SpeechPlaybackMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C853D0A9F6E3DD3E4BDF20F1 /* SpeechPlaybackMonitor.swift */; };
+		B05C020E8D99D874F7B23C00 /* PhoneSpeechRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A002ADDC08623032AE34FF35 /* PhoneSpeechRenderer.swift */; };
+		B34F34DE3510EBC7831FF10C /* DevelopmentAudioProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EF7871183FFE7D38A1B3BE9 /* DevelopmentAudioProbe.swift */; };
 		BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E230105EAA6DBF31D04B2876 /* Assets.xcassets */; };
+		CDBD82BDB885747364916F47 /* CompanionMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4EB17571290B35D30404E3 /* CompanionMotion.swift */; };
+		D6D09E3AC09910679AAB749C /* CharacterAnimationFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */; };
 		D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
 		E5F41473C6BFCD2D4FB21ED4 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
 		E7958EAAD77F1E4C96BAA979 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E230105EAA6DBF31D04B2876 /* Assets.xcassets */; };
@@ -76,7 +90,11 @@
 		0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPacketQueue.swift; sourceTree = "<group>"; };
 		0F40326A4592B3BDE6A623C5 /* Avatodo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Avatodo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		167F6A2AD1043E4C6628B69C /* WatchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchModel.swift; sourceTree = "<group>"; };
+		1929F23DAE850BD5A002DAF9 /* DefaultLionAtlas.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = DefaultLionAtlas.png; sourceTree = "<group>"; };
+		25191ECF5A50FC81615FEC53 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopmentBootstrap.swift; sourceTree = "<group>"; };
+		57A55234BFDB05ADAF96B5CC /* ReplyAudioWire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplyAudioWire.swift; sourceTree = "<group>"; };
+		5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAnimationFrames.swift; sourceTree = "<group>"; };
 		6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayPCMEncoder.swift; sourceTree = "<group>"; };
 		763644AB913F6546845CC3C7 /* PhoneViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneViews.swift; sourceTree = "<group>"; };
 		76428FF51347C2AA50A0EDAE /* asset-provenance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "asset-provenance.json"; sourceTree = "<group>"; };
@@ -86,18 +104,23 @@
 		7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionSurface.swift; sourceTree = "<group>"; };
 		84AA33C5C2802CA212937B76 /* PhoneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneModel.swift; sourceTree = "<group>"; };
 		8AE18A2646568DECF7D77B0A /* DeviceAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAudio.swift; sourceTree = "<group>"; };
+		9EF7871183FFE7D38A1B3BE9 /* DevelopmentAudioProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopmentAudioProbe.swift; sourceTree = "<group>"; };
+		A002ADDC08623032AE34FF35 /* PhoneSpeechRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSpeechRenderer.swift; sourceTree = "<group>"; };
 		AD83143A42977C8C0DDCFA20 /* avatodo */ = {isa = PBXFileReference; lastKnownFileType = folder; name = avatodo; path = .; sourceTree = SOURCE_ROOT; };
 		B6494A9E74BF53E3432A3B41 /* AvatodoWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AvatodoWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B80ACB6EB4D5C5B2EF0540A2 /* ReplyAudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplyAudioPlayer.swift; sourceTree = "<group>"; };
 		C692854851D5F69AF6A7D38B /* PhoneRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRecognition.swift; sourceTree = "<group>"; };
 		C853D0A9F6E3DD3E4BDF20F1 /* SpeechPlaybackMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPlaybackMonitor.swift; sourceTree = "<group>"; };
 		CA85DE00B51690DACD678F80 /* MetaDataSharingConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetaDataSharingConsent.swift; sourceTree = "<group>"; };
 		CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechVoiceSelection.swift; sourceTree = "<group>"; };
+		CD4EB17571290B35D30404E3 /* CompanionMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionMotion.swift; sourceTree = "<group>"; };
 		D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatodoWatchApp.swift; sourceTree = "<group>"; };
 		DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterChunkAssembler.swift; sourceTree = "<group>"; };
 		E230105EAA6DBF31D04B2876 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E231E435EAA0748E3E4B29BB /* CompanionLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionLink.swift; sourceTree = "<group>"; };
 		ED724BB1E90942C940650053 /* CharacterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterStore.swift; sourceTree = "<group>"; };
 		F209C7E8820873050F38C19B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F6D4B26750DBF53A17E54810 /* GoogleDriveSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +129,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				282AF9F9EB2F8AF53DB9681D /* AvatodoCore in Frameworks */,
+				3DF95340C1A90311D34BD871 /* GoogleSignIn in Frameworks */,
+				A282B2D2B58DB5E9139D5190 /* GoogleSignInSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,14 +160,17 @@
 			isa = PBXGroup;
 			children = (
 				0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */,
+				5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */,
 				DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */,
 				7E1D48D3C7F72610DC2122C8 /* CharacterLibrary.swift */,
 				ED724BB1E90942C940650053 /* CharacterStore.swift */,
 				E231E435EAA0748E3E4B29BB /* CompanionLink.swift */,
+				CD4EB17571290B35D30404E3 /* CompanionMotion.swift */,
 				03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */,
 				7FC0C17758A4EA63A3FF4FCB /* CompanionSurface.swift */,
 				8AE18A2646568DECF7D77B0A /* DeviceAudio.swift */,
 				6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */,
+				57A55234BFDB05ADAF96B5CC /* ReplyAudioWire.swift */,
 				C853D0A9F6E3DD3E4BDF20F1 /* SpeechPlaybackMonitor.swift */,
 				CC3AE547C4593EBA1F89A2A4 /* SpeechVoiceSelection.swift */,
 			);
@@ -154,6 +182,7 @@
 			children = (
 				76428FF51347C2AA50A0EDAE /* asset-provenance.json */,
 				E230105EAA6DBF31D04B2876 /* Assets.xcassets */,
+				1929F23DAE850BD5A002DAF9 /* DefaultLionAtlas.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -162,6 +191,7 @@
 			isa = PBXGroup;
 			children = (
 				D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */,
+				B80ACB6EB4D5C5B2EF0540A2 /* ReplyAudioPlayer.swift */,
 				167F6A2AD1043E4C6628B69C /* WatchModel.swift */,
 			);
 			path = Watch;
@@ -189,11 +219,15 @@
 			isa = PBXGroup;
 			children = (
 				7929606CD93008BF8FB35951 /* AvatodoApp.swift */,
+				9EF7871183FFE7D38A1B3BE9 /* DevelopmentAudioProbe.swift */,
 				3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */,
+				F6D4B26750DBF53A17E54810 /* GoogleDriveSync.swift */,
+				25191ECF5A50FC81615FEC53 /* Info.plist */,
 				7F74FDB4EDA30BB51B82085F /* KeychainStore.swift */,
 				CA85DE00B51690DACD678F80 /* MetaDataSharingConsent.swift */,
 				84AA33C5C2802CA212937B76 /* PhoneModel.swift */,
 				C692854851D5F69AF6A7D38B /* PhoneRecognition.swift */,
+				A002ADDC08623032AE34FF35 /* PhoneSpeechRenderer.swift */,
 				763644AB913F6546845CC3C7 /* PhoneViews.swift */,
 				F209C7E8820873050F38C19B /* PrivacyInfo.xcprivacy */,
 			);
@@ -220,6 +254,8 @@
 			name = Avatodo;
 			packageProductDependencies = (
 				C0FD2E87FA4DD33E23B471F5 /* AvatodoCore */,
+				EC82811B2FF9FB43E7CFCA2F /* GoogleSignIn */,
+				A0E33ABDECF5E519A83B3EE8 /* GoogleSignInSwift */,
 			);
 			productName = Avatodo;
 			productReference = 0F40326A4592B3BDE6A623C5 /* Avatodo.app */;
@@ -270,6 +306,7 @@
 			mainGroup = 983A5BA7BADB308763BDAC1C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				A8EDFB93313CB50F2A81492E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				9EE9AC4CE4242AAB834545AD /* XCLocalSwiftPackageReference "." */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -289,6 +326,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */,
+				7FA8D11D9126BAC195ABD4EB /* DefaultLionAtlas.png in Resources */,
 				6928B4194D43E74BA50D7FF8 /* PrivacyInfo.xcprivacy in Resources */,
 				E5F41473C6BFCD2D4FB21ED4 /* asset-provenance.json in Resources */,
 			);
@@ -299,6 +337,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7958EAAD77F1E4C96BAA979 /* Assets.xcassets in Resources */,
+				A2E74427F9C594856A517636 /* DefaultLionAtlas.png in Resources */,
 				25BAB5922280AE4CF1347640 /* asset-provenance.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -312,20 +351,26 @@
 			files = (
 				33264C64669354732BAD6720 /* AudioPacketQueue.swift in Sources */,
 				13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */,
+				D6D09E3AC09910679AAB749C /* CharacterAnimationFrames.swift in Sources */,
 				179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */,
 				0791EC76EB8583DD04E22FD4 /* CharacterLibrary.swift in Sources */,
 				1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */,
 				F19B08B61994405804CF1447 /* CompanionLink.swift in Sources */,
+				CDBD82BDB885747364916F47 /* CompanionMotion.swift in Sources */,
 				09BBA5ADE0532D1495A87751 /* CompanionState.swift in Sources */,
 				8DCB417584DBDEBE85A36E16 /* CompanionSurface.swift in Sources */,
+				B34F34DE3510EBC7831FF10C /* DevelopmentAudioProbe.swift in Sources */,
 				101672814772F60BF4A3B2BB /* DevelopmentBootstrap.swift in Sources */,
 				F70BCBB4AEAD0AF01D2F300E /* DeviceAudio.swift in Sources */,
+				132EB0897ED0BBC37670760C /* GoogleDriveSync.swift in Sources */,
 				46770E5F9A266B9C1553AC5E /* KeychainStore.swift in Sources */,
 				8C8CA7FF17098456BCA88280 /* MetaDataSharingConsent.swift in Sources */,
 				92C051E6C00012CFB65830FA /* PhoneModel.swift in Sources */,
 				FE6910C41E254BAEB3FAF384 /* PhoneRecognition.swift in Sources */,
+				B05C020E8D99D874F7B23C00 /* PhoneSpeechRenderer.swift in Sources */,
 				585603B61A805F5DA591E71E /* PhoneViews.swift in Sources */,
 				D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */,
+				7F05436AF5927D8540F3876C /* ReplyAudioWire.swift in Sources */,
 				3977676D5EE01E1E6D655162 /* SpeechPlaybackMonitor.swift in Sources */,
 				83667AD0D9EA9D20EE617CDE /* SpeechVoiceSelection.swift in Sources */,
 			);
@@ -337,14 +382,18 @@
 			files = (
 				A2BAF8068CE51D4D86BEF5EE /* AudioPacketQueue.swift in Sources */,
 				4F5B5E8F4F1B106E86204B88 /* AvatodoWatchApp.swift in Sources */,
+				10FB044FB4FDE5A6DB3FB5E1 /* CharacterAnimationFrames.swift in Sources */,
 				BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */,
 				135628590A2AEA6776553D57 /* CharacterLibrary.swift in Sources */,
 				9DFE0DD98ED6FAEC49D1CD43 /* CharacterStore.swift in Sources */,
 				887A5B0D1C773CC91EE3327C /* CompanionLink.swift in Sources */,
+				4E777B34D44999E5F6DACBEC /* CompanionMotion.swift in Sources */,
 				96505ADCAFBC30959213B2E2 /* CompanionState.swift in Sources */,
 				3963CECF9169BC715C103BB3 /* CompanionSurface.swift in Sources */,
 				070EDEAD6BF79AA0C38B4EC6 /* DeviceAudio.swift in Sources */,
 				47774E76A3E02A68EB1B1224 /* RelayPCMEncoder.swift in Sources */,
+				6F777203D1607B856B25F3E8 /* ReplyAudioPlayer.swift in Sources */,
+				1D867838D94FF1F3A7ECD46E /* ReplyAudioWire.swift in Sources */,
 				AD88F7653A592890FEF8B68A /* SpeechPlaybackMonitor.swift in Sources */,
 				00B63EFFC02298851E5D7B3B /* SpeechVoiceSelection.swift in Sources */,
 				610824378E9FB6D25802B817 /* WatchModel.swift in Sources */,
@@ -387,6 +436,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/iOS/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Avatodo;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Talk to your companion to create and update your notes.";
@@ -437,7 +487,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -503,7 +553,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -553,6 +603,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/iOS/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Avatodo;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Talk to your companion to create and update your notes.";
@@ -608,10 +659,31 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		A8EDFB93313CB50F2A81492E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = exactVersion;
+				version = 10.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		A0E33ABDECF5E519A83B3EE8 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8EDFB93313CB50F2A81492E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
 		C0FD2E87FA4DD33E23B471F5 /* AvatodoCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AvatodoCore;
+		};
+		EC82811B2FF9FB43E7CFCA2F /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8EDFB93313CB50F2A81492E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

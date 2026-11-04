@@ -1,7 +1,7 @@
 import Foundation
 
-struct SpeechVoiceOption: Identifiable, Equatable, Sendable {
-    enum Quality: Int, Sendable {
+struct SpeechVoiceOption: Identifiable, Codable, Equatable, Sendable {
+    enum Quality: Int, Codable, Sendable {
         case standard = 1, enhanced = 2, premium = 3
         var label: String {
             switch self { case .standard: "Standard"; case .enhanced: "Enhanced"; case .premium: "Premium" }

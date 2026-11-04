@@ -4,6 +4,7 @@ import UIKit
 import AvatodoCore
 
 @MainActor @Observable final class PhoneModel {
+    let drive = GoogleDriveSync()
     var state = CompanionViewState()
     var notes: [Note] = []
     var characterData: Data?
@@ -28,7 +29,19 @@ import AvatodoCore
     var alert: String?
     var checkingConnection = false
     var connectionStatus: String?
+    private(set) var reasoningModel = MetaReasoningModel(savedValue: UserDefaults.standard.string(forKey: "reasoningModel"))
+    var canChangeReasoningModel: Bool { state.phase.isIdle && work == nil }
+    func selectReasoningModel(_ selection: MetaReasoningModel) {
+        guard canChangeReasoningModel, selection != reasoningModel else { return }
+        reasoningModel = selection
+        UserDefaults.standard.set(selection.rawValue, forKey: "reasoningModel")
+        resetConnectionStatus()
+    }
     var availableVoices: [SpeechVoiceOption] = []
+    var availableWatchVoices: [SpeechVoiceOption] = []
+    var watchVoiceChoice = UserDefaults.standard.string(forKey: "watchVoiceChoice") ?? "iphone" {
+        didSet { UserDefaults.standard.set(watchVoiceChoice, forKey: "watchVoiceChoice"); syncVoicePreference() }
+    }
     var previewingVoice = false
     var voicePreviewMessage: String?
     var preferredVoiceID = UserDefaults.standard.string(forKey: "preferredVoiceID") ?? "" {
@@ -55,6 +68,8 @@ import AvatodoCore
     private let microphone = MicrophoneCapture()
     private let recognition = PhoneRecognition()
     private let voice = DeviceVoice()
+    private let speechRenderer = PhoneSpeechRenderer()
+    private var replyAudioWork: Task<Void, Never>?
     private var voicePreviewID: UUID?
     private let link = CompanionLink()
     private var work: Task<Void, Never>?
@@ -76,6 +91,10 @@ import AvatodoCore
     private var cancelledWatchRequests: Set<UUID> = []
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var lastReceiptByNote: [UUID: UUID] = [:]
+    @ObservationIgnored private var noteEditors: [UUID: NoteTextEditingSession] = [:]
+    private var watchSupportsCharacterAnimations = false
+    private var watchSupportsPhoneAudio = false
+    private var watchPoster: (manifest: CharacterManifest, url: URL)?
 
     init() {
         state.hasDataSharingConsent = consent.isGranted
@@ -105,6 +124,11 @@ import AvatodoCore
             guard let self, reachable else { return }
             self.publish(); self.sendCharacter()
         }
+        link.replyAudioFinished = { [weak self] id, succeeded in
+            guard let self, requestID == id, state.phase == .speaking else { return }
+            if !succeeded { fallbackToWatchVoice() }
+            endBackgroundWork()
+        }
         refreshVoices()
         Task { await refreshNotes() }
     }
@@ -120,6 +144,10 @@ import AvatodoCore
     private func syncVoicePreference() {
         state.preferredVoiceID = preferredVoiceID.isEmpty ? nil : preferredVoiceID
         state.preferredVoiceLanguage = voiceLanguage
+        state.watchVoiceMode = watchVoiceChoice == "iphone" ? .iPhone : .watch
+        let watchID = watchVoiceChoice.hasPrefix("watch:") ? String(watchVoiceChoice.dropFirst(6)) : nil
+        state.preferredWatchVoiceID = watchID
+        state.preferredWatchVoiceLanguage = availableWatchVoices.first(where: { $0.id == watchID })?.language ?? voiceLanguage
         publish()
     }
     func previewVoice() {
@@ -164,17 +192,18 @@ import AvatodoCore
         do {
             try consent.requirePermission()
             guard let key = try KeychainStore.load() else { throw MetaError.missingKey }
-            let request = Task { try await MetaClient().checkAccess(key: key) }
+            let selection = reasoningModel
+            let request = Task { try await MetaClient(reasoningModel: selection).checkAccess(key: key) }
             connectionCheckTask = request
             let access = try await request.value
             guard connectionCheckID == id, consent.isGranted else { return }
             switch (access.languageModelAvailable, access.imageModelAvailable) {
             case (true, true):
-                connectionStatus = "Key accepted; Muse Spark and Muse Image are listed."
+                connectionStatus = "Key accepted; \(selection.title) and Muse Image are listed."
             case (true, false):
-                connectionStatus = "Key accepted; Muse Spark is listed, but Muse Image is not."
+                connectionStatus = "Key accepted; \(selection.title) is listed, but Muse Image is not."
             case (false, true):
-                connectionStatus = "Key accepted; Muse Image is listed, but Muse Spark is not."
+                connectionStatus = "Key accepted; Muse Image is listed, but \(selection.title) is not."
             case (false, false):
                 connectionStatus = "Key accepted, but neither required model is listed for this account."
             }
@@ -229,15 +258,29 @@ import AvatodoCore
         }
     }
     func note(_ id: UUID) -> Note? { notes.first { $0.id == id } }
+    func noteEditor(for note: Note) -> NoteTextEditingSession? {
+        if let editor = noteEditors[note.id] { return editor }
+        guard let store else { return nil }
+        let editor = NoteTextEditingSession(note: note, store: store) { [weak self] in await self?.refreshNotes() }
+        noteEditors[note.id] = editor
+        return editor
+    }
     func refreshNotes() async {
         guard let store else { return }
         notes = await store.notes()
+        for note in notes { noteEditors[note.id]?.receive(note) }
         var undoable: [UUID: UUID] = [:]
         for note in notes { undoable[note.id] = await store.undoableReceiptID(for: note.id) }
         lastReceiptByNote = undoable
+        drive.changed(notes)
     }
     private func publish() {
-        state.sequence += 1; state.updatedAt = Date(); link.sendState(state)
+        state.sequence += 1; state.updatedAt = Date()
+        var watchState = state
+        if !watchSupportsCharacterAnimations, characterManifest?.animationLayout != nil {
+            watchState.characterID = watchPoster?.manifest.id
+        }
+        link.sendState(watchState)
     }
     private func setPhase(_ phase: CompanionPhase, caption: String? = nil, text: String? = nil) {
         state.phase = phase; state.caption = caption ?? phase.title
@@ -253,14 +296,19 @@ import AvatodoCore
         case .speaking: stopSpeaking()
         }
     }
+    func dance(id: UUID = UUID()) {
+        guard state.phase.isIdle else { return }
+        state.reaction = .dance; state.reactionID = id; publish()
+    }
     func begin(scope: UUID? = nil, fromWatch: Bool = false, id: UUID = UUID()) {
         guard state.phase.isIdle, work == nil else { if fromWatch { publish() }; return }
         if fromWatch, recentVoiceRequests.contains(id) || cancelledWatchRequests.contains(id) { publish(); return }
         guard agent != nil, setupError == nil else { return }
         guard requireConsent(fromWatch: fromWatch, id: id) else { return }
         guard state.hasModelKey else { setPhase(.error, text: "Add your Meta API key in iPhone Settings first."); return }
-        stopVoicePreview(); voice.stop(); confirmationTimer?.cancel(); replyTimer?.cancel(); undoTimer?.cancel(); idle?.cancel(); showUndo = false
-        cancellationMessage = nil; state.resultIsMutation = false
+        stopVoicePreview(); voice.stop(); stopReplyAudio(); confirmationTimer?.cancel(); replyTimer?.cancel(); undoTimer?.cancel(); idle?.cancel(); showUndo = false
+        cancellationMessage = nil; state.resultIsMutation = false; state.replyAudioExpected = nil; state.replyAudioID = nil
+        state.reaction = nil; state.reactionID = nil
         state.sessionExpiresAt = nil; state.undoExpiresAt = nil
         state.undoReceiptID = nil; state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
         scopedNoteID = scope; watchOrigin = fromWatch; requestID = id; state.requestID = id
@@ -322,6 +370,8 @@ import AvatodoCore
         state.replyDevice = fromWatch ? "watch" : "phone"
         state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
         showUndo = false; confirmationTimer?.cancel(); undoTimer?.cancel(); replyTimer?.cancel(); idle?.cancel(); stopVoicePreview(); voice.stop()
+        stopReplyAudio(); state.replyAudioExpected = nil; state.replyAudioID = nil
+        state.reaction = nil; state.reactionID = nil
         cancellationMessage = nil; state.resultIsMutation = false
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         if fromWatch { startBackgroundWork() }
@@ -367,18 +417,24 @@ import AvatodoCore
             _ = await agent.expireIfNeeded()
             await agent.setPresentingReply(true)
             let outcome = try await agent.respond(to: text, requestID: id, key: key, scopedTo: scopedNoteID,
-                                                  companionName: state.characterName)
+                                                  companionName: state.characterName,
+                                                  using: MetaClient(reasoningModel: reasoningModel))
             await refreshNotes()
             guard consent.isGranted else { throw MetaConsentError.revoked }
             guard requestID == id else { return }
             state.resultIsMutation = !outcome.receipts.isEmpty
             state.text = outcome.reply; state.noteID = outcome.activeNoteID
+            state.reaction = outcome.reaction.flatMap { CompanionReaction(rawValue: $0.rawValue) }
+            state.reactionID = state.reaction == nil ? nil : id
             state.noteTitle = outcome.activeNoteID.flatMap { note($0)?.title }
             state.undoReceiptID = outcome.receipts.last?.id
             for receipt in outcome.receipts { lastReceiptByNote[receipt.noteID] = receipt.id }
             showUndo = state.undoReceiptID != nil
             savedCaption = outcome.receipts.last.map(Self.confirmation) ?? "Saved"
             if speaksReplies && !Task.isCancelled {
+                let phoneAudio = watchOrigin && watchSupportsPhoneAudio && state.watchVoiceMode == .iPhone
+                state.replyAudioExpected = phoneAudio
+                state.replyAudioID = phoneAudio ? UUID() : nil
                 setPhase(.speaking, caption: outcome.receipts.isEmpty ? nil : savedCaption)
                 if watchOrigin {
                     // Watch speaks locally; a bounded watchdog prevents a lost playback acknowledgement blocking the session.
@@ -387,7 +443,8 @@ import AvatodoCore
                         guard !Task.isCancelled, self?.requestID == id else { return }
                         self?.readyAfterReply(audioUnavailable: true)
                     }
-                    endBackgroundWork()
+                    if phoneAudio { prepareWatchReplyAudio(text: outcome.reply, requestID: id) }
+                    else { endBackgroundWork() }
                 } else {
                     do { try voice.speak(outcome.reply, preferredID: state.preferredVoiceID,
                                          language: voiceLanguage) { [weak self] outcome in
@@ -405,7 +462,36 @@ import AvatodoCore
         guard canControl, state.phase == .speaking else { return }
         voice.stop(); readyAfterReply()
     }
+    private func prepareWatchReplyAudio(text: String, requestID id: UUID) {
+        guard let audioID = state.replyAudioID else { return }
+        replyAudioWork = Task { [weak self] in
+            guard let self else { return }
+            defer { if requestID == id { replyAudioWork = nil } }
+            do {
+                let clip = try await speechRenderer.render(text, preferredID: state.preferredVoiceID, language: voiceLanguage)
+                try Task.checkCancellation()
+                guard requestID == id, state.phase == .speaking, state.replyAudioExpected == true,
+                      state.replyAudioID == audioID else { return }
+                let manifest = ReplyAudioManifest(id: audioID, requestID: id, sha256: ReplyAudioAssembler.digest(clip.data),
+                    totalBytes: clip.data.count, duration: clip.duration)
+                link.transferReplyAudio(clip.data, manifest: manifest)
+            } catch is CancellationError { }
+            catch {
+                guard requestID == id, state.phase == .speaking else { return }
+                fallbackToWatchVoice()
+            }
+        }
+    }
+    private func stopReplyAudio() {
+        replyAudioWork?.cancel(); replyAudioWork = nil; speechRenderer.cancel(); link.cancelReplyAudio()
+    }
+    private func fallbackToWatchVoice() {
+        stopReplyAudio(); state.replyAudioExpected = false; state.replyAudioID = nil
+        publish(); endBackgroundWork()
+    }
     private func readyAfterReply(audioUnavailable: Bool = false) {
+        stopReplyAudio()
+        if audioUnavailable { state.reaction = nil; state.reactionID = nil }
         replyTimer?.cancel(); state.sessionExpiresAt = Date().addingTimeInterval(300)
         state.undoExpiresAt = showUndo ? Date().addingTimeInterval(5) : nil
         if state.resultIsMutation {
@@ -430,6 +516,7 @@ import AvatodoCore
         }
     }
     func cancel(message: String? = nil) {
+        stopReplyAudio()
         cancellationMessage = message; acceptingAudio = false
         captureTimer?.cancel(); microphone.stop(); recognition.cancel(); work?.cancel()
         if work != nil { setPhase(.thinking, caption: "Stopping…", text: message) }
@@ -450,9 +537,10 @@ import AvatodoCore
     }
     func startFresh() {
         guard state.phase.isIdle, work == nil else { return }
-        stopVoicePreview(); voice.stop(); confirmationTimer?.cancel(); undoTimer?.cancel(); showUndo = false; scopedNoteID = nil
+        stopVoicePreview(); voice.stop(); stopReplyAudio(); confirmationTimer?.cancel(); undoTimer?.cancel(); showUndo = false; scopedNoteID = nil
         state.sessionExpiresAt = nil; state.undoExpiresAt = nil; state.resultIsMutation = false
         state.text = ""; state.noteID = nil; state.noteTitle = nil; state.undoReceiptID = nil; state.requestID = nil
+        state.reaction = nil; state.reactionID = nil
         Task { _ = await agent?.startFresh() }; setPhase(.ready); scheduleIdle()
     }
     private func scheduleIdle() {
@@ -466,13 +554,14 @@ import AvatodoCore
             }
         }
     }
-    func mutation(_ action: TaskAction) async {
-        guard let store else { return }
+    @discardableResult func mutation(_ action: TaskAction) async -> Bool {
+        guard let store else { return false }
         do {
             let receipt = try await store.perform(MutationRequest(action: action))
             lastReceiptByNote[receipt.noteID] = receipt.id
             await refreshNotes()
-        } catch { alert = "That change wasn’t saved. The note may have changed; open it again and retry." }
+            return true
+        } catch { alert = "That change wasn’t saved. The note may have changed; open it again and retry."; return false }
     }
     func undoID(for noteID: UUID) -> UUID? { lastReceiptByNote[noteID] }
     func undo(receiptID: UUID? = nil) {
@@ -513,8 +602,45 @@ import AvatodoCore
             applyCharacterLibrary(try characterLibrary.add(prepared, manifest: manifest))
             restoreSelectedCharacterDraft()
             publish(); sendCharacter()
+            do { try await addAnimatedPoses(to: manifest, reference: prepared, key: key) }
+            catch {
+                alert = "Your companion is saved. Its animations couldn’t finish. You can try Animate this companion again."
+            }
         } catch is CancellationError { alert = MetaConsentError.revoked.localizedDescription }
         catch { alert = error.localizedDescription }
+    }
+    func animateSelectedCharacter() async {
+        guard canChangeCharacter, let manifest = characterManifest, let image = characterData else { return }
+        do { try consent.requirePermission() } catch { alert = error.localizedDescription; return }
+        generating = true
+        defer { generating = false; characterRequest = nil }
+        do {
+            guard let key = try KeychainStore.load() else { throw MetaError.missingKey }
+            let reference: Data
+            if let layout = manifest.animationLayout {
+                guard let first = try CharacterAnimationFrames.decode(image, layout: layout).first else { throw CharacterFailure.invalid }
+                reference = try CharacterStore.encodePNG(first)
+            } else { reference = image }
+            try await addAnimatedPoses(to: manifest, reference: reference, key: key)
+        } catch { alert = "Your saved companion is unchanged. Its animations couldn’t finish. Please try again." }
+    }
+    private func addAnimatedPoses(to original: CharacterManifest, reference: Data, key: String) async throws {
+        try consent.requirePermission()
+        generationStage = "Creating expressions with Muse Image…"
+        let request = Task { try await MetaClient().generateCharacterAnimations(reference: reference, key: key) }
+        characterRequest = request
+        let sheet = try await request.value
+        try consent.requirePermission()
+        generationStage = "Preparing local animations…"
+        let prepared = try await Task.detached(priority: .userInitiated) { try CharacterStore.prepareAnimationSheet(sheet) }.value
+        try consent.requirePermission()
+        let animated = CharacterManifest(id: UUID(), name: original.name, sha256: CharacterStore.digest(prepared),
+            generatedAt: original.generatedAt, sourceModel: original.sourceModel, description: original.description,
+            animationLayout: .twentyPoseV1)
+        let snapshot = try characterLibrary.replace(original.id, image: prepared, manifest: animated)
+        link.cancelCharacterTransfers()
+        applyCharacterLibrary(snapshot); restoreSelectedCharacterDraft()
+        publish(); sendCharacter()
     }
     func useDefaultCharacter() {
         selectCharacter(nil)
@@ -536,6 +662,29 @@ import AvatodoCore
         state.characterID = snapshot.selected?.id
         let selectedName = snapshot.selected?.manifest.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         state.characterName = selectedName.isEmpty ? CharacterDefaults.name : selectedName
+        prepareWatchPoster()
+    }
+    private func prepareWatchPoster() {
+        watchPoster = nil
+        guard let manifest = characterManifest, manifest.animationLayout != nil, let data = characterData else { return }
+        do {
+            guard let frame = try CharacterAnimationFrames.decode(data, layout: manifest.animationLayout).first else { return }
+            let poster = try CharacterStore.encodePNG(frame)
+            let digest = CharacterStore.digest(Data(("watch-poster:" + manifest.id.uuidString).utf8))
+            let hex = Array(digest.prefix(32))
+            let uuid = [String(hex[0..<8]), String(hex[8..<12]), String(hex[12..<16]), String(hex[16..<20]), String(hex[20..<32])].joined(separator: "-")
+            guard let id = UUID(uuidString: uuid) else { return }
+            let folder = CharacterStore.folder.appendingPathComponent("Compatibility", isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let url = folder.appendingPathComponent(id.uuidString + ".png")
+            try poster.write(to: url, options: .atomic)
+            for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+                where old != url && old.pathExtension == "png" && UUID(uuidString: old.deletingPathExtension().lastPathComponent) != nil {
+                try? FileManager.default.removeItem(at: old)
+            }
+            watchPoster = (CharacterManifest(id: id, name: manifest.name, sha256: CharacterStore.digest(poster),
+                generatedAt: manifest.generatedAt, sourceModel: manifest.sourceModel, description: manifest.description), url)
+        } catch { /* Never send an atlas to an older Watch that would display all nine poses. */ }
     }
     private func restoreSelectedCharacterDraft() {
         characterDraftName = characterManifest?.name ?? CharacterDefaults.name
@@ -543,7 +692,12 @@ import AvatodoCore
     }
     private func sendCharacter(retryForeground: Bool = false) {
         guard let manifest = characterManifest else { return }
-        link.transferCharacter(url: CharacterStore.url(for: manifest.id), manifest: manifest, retryForeground: retryForeground)
+        if !watchSupportsCharacterAnimations, manifest.animationLayout != nil {
+            guard let poster = watchPoster else { return }
+            link.transferCharacter(url: poster.url, manifest: poster.manifest, retryForeground: retryForeground)
+        } else {
+            link.transferCharacter(url: CharacterStore.url(for: manifest.id), manifest: manifest, retryForeground: retryForeground)
+        }
     }
     private func received(_ data: Data) {
         guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data) else { return }
@@ -551,6 +705,17 @@ import AvatodoCore
             receiveFrame(frame); return
         }
         guard envelope.type == "command", let command = try? JSONDecoder().decode(WatchCommand.self, from: envelope.payload) else { return }
+        let supportsAnimations = command.supportsCharacterAnimations == true
+        watchSupportsPhoneAudio = command.supportsPhoneReplyAudio == true
+        if let voices = command.availableVoices, voices.count <= 512,
+           voices.allSatisfy({ !$0.id.isEmpty && $0.id.count <= 200 && $0.name.count <= 100 && $0.language.count <= 40 && (1...3).contains($0.quality) }) {
+            availableWatchVoices = voices.map { SpeechVoiceOption(id: $0.id, name: $0.name, language: $0.language,
+                quality: SpeechVoiceOption.Quality(rawValue: $0.quality) ?? .standard) }
+            state.preferredWatchVoiceLanguage = availableWatchVoices.first(where: { "watch:" + $0.id == watchVoiceChoice })?.language ?? voiceLanguage
+        }
+        if supportsAnimations != watchSupportsCharacterAnimations {
+            watchSupportsCharacterAnimations = supportsAnimations; link.cancelCharacterTransfers()
+        }
         // A new Watch turn may also acknowledge its previous local playback end.
         // This survives a lost standalone acknowledgement without replaying work.
         if command.kind != .playbackEnded, command.kind != .stopSpeaking,
@@ -570,6 +735,9 @@ import AvatodoCore
             else { publish() }
         case .undo: undo(receiptID: command.receiptID)
         case .startFresh: startFresh()
+        case .dance: dance(id: command.reactionID ?? UUID())
+        case .speechFallback:
+            if watchOrigin && requestID == command.requestID && state.phase == .speaking { fallbackToWatchVoice() }
         case .stopSpeaking, .playbackEnded:
             if watchOrigin && requestID == command.requestID && state.phase == .speaking {
                 readyAfterReply(audioUnavailable: command.text == "audioUnavailable")
@@ -604,7 +772,11 @@ import AvatodoCore
     private func startBackgroundWork() {
         endBackgroundWork()
         backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish Watch request") { [weak self] in
-            Task { @MainActor [weak self] in self?.cancel(message: "Open Avatodo on iPhone to continue. Check Notes for any saved changes."); self?.endBackgroundWork() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if watchOrigin, state.phase == .speaking, state.replyAudioExpected == true { fallbackToWatchVoice() }
+                else { cancel(message: "Open Avatodo on iPhone to continue. Check Notes for any saved changes."); endBackgroundWork() }
+            }
         }
     }
     private func endBackgroundWork() {

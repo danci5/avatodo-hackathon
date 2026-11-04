@@ -5,12 +5,20 @@ import WatchKit
 @MainActor @Observable final class WatchModel {
     var state = CompanionViewState()
     var characterData: Data?
+    var characterManifest: CharacterManifest?
     var reachable = false
     var showUndo = false
     var canControl: Bool { state.phase.isIdle || (state.replyDevice == "watch" && state.requestID == localRequest) }
     private let link = CompanionLink()
     private let microphone = MicrophoneCapture()
     private let voice = DeviceVoice()
+    private let replyPlayer = ReplyAudioPlayer()
+    private var replyAssembler = ReplyAudioAssembler()
+    private var pendingReplyAudio: CompletedReplyAudio?
+    private var audioWait: Task<Void, Never>?
+    private var waitingAudioID: UUID?
+    private var replyAudioCaption: String?
+    private var forcedLocalReplyID: UUID?
     private var localRequest: UUID?
     private var capturing = false
     private var packetCount = 0
@@ -33,7 +41,7 @@ import WatchKit
     private var remoteEpoch: UUID?
 
     init() {
-        if let saved = CharacterStore.load() { characterData = saved.0; state.characterID = saved.1.id; displayedCharacterID = saved.1.id }
+        if let saved = CharacterStore.load() { characterData = saved.0; characterManifest = saved.1; state.characterID = saved.1.id; displayedCharacterID = saved.1.id }
         link.receive = { [weak self] in self?.received($0) }
         link.receiveFile = { [weak self] bytes, metadata in self?.receivedCharacter(bytes, metadata) }
         link.connectivityChanged = { [weak self] connected in
@@ -51,6 +59,11 @@ import WatchKit
         }
     }
     func refresh() { command(.status) }
+    func dance() {
+        guard state.phase.isIdle else { return }
+        state.reaction = .dance; state.reactionID = UUID()
+        if reachable { command(.dance) }
+    }
     func primary() {
         guard canControl else { return }
         switch state.phase {
@@ -60,7 +73,7 @@ import WatchKit
             stopCapture(); awaitingStart = false; awaitingStop = true
             state.caption = "Stopping…"; command(.cancel); waitForReply(seconds: 15)
         case .speaking:
-            voice.stop()
+            voice.stop(); stopReplyAudio()
             finishPlayback(id: localRequest, outcome: .finished, command: .stopSpeaking)
         }
     }
@@ -68,9 +81,11 @@ import WatchKit
         guard state.phase.isIdle else { return }
         guard reachable else { unavailable(); return }
         guard state.hasDataSharingConsent == true else { consentRequired(); return }
-        voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
+        voice.stop(); stopReplyAudio(); stopCapture(); undoTimer?.cancel(); showUndo = false
         let id = UUID(); localRequest = id; packetCount = 0; awaitingStart = true; awaitingStop = false; awaitingFinish = false
+        replyAssembler.begin(id); forcedLocalReplyID = nil
         state.requestID = id; state.replyDevice = "watch"
+        state.reaction = nil; state.reactionID = nil
         state.phase = .thinking; state.caption = "Connecting…"; state.text = ""
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         command(.begin); waitForReply(seconds: 20)
@@ -79,9 +94,11 @@ import WatchKit
         guard state.phase.isIdle, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard reachable else { unavailable(); return }
         guard state.hasDataSharingConsent == true else { consentRequired(); return }
-        voice.stop(); stopCapture(); undoTimer?.cancel(); showUndo = false
+        voice.stop(); stopReplyAudio(); stopCapture(); undoTimer?.cancel(); showUndo = false
         let id = UUID(); localRequest = id; awaitingStart = true; awaitingStop = false; awaitingFinish = false
+        replyAssembler.begin(id); forcedLocalReplyID = nil
         state.requestID = id; state.replyDevice = "watch"
+        state.reaction = nil; state.reactionID = nil
         state.phase = .thinking; state.caption = "Thinking…"; state.text = text
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         command(.text, text: text); waitForReply(seconds: 90)
@@ -115,14 +132,30 @@ import WatchKit
     }
     func startFresh() {
         guard state.phase.isIdle else { return }
-        voice.stop(); stopCapture(); state.text = ""; showUndo = false; command(.startFresh)
+        voice.stop(); stopReplyAudio(); stopCapture(); state.text = ""; showUndo = false; command(.startFresh)
     }
     private func command(_ kind: WatchCommand.Kind, text: String? = nil, receipt: UUID? = nil, count: Int? = nil) {
+        let voices: [WatchVoiceDescriptor]? = kind == .status ? Array(DeviceVoice.installedVoiceOptions().prefix(80)).map {
+            WatchVoiceDescriptor(id: $0.id, name: $0.name, language: $0.language, quality: $0.quality.rawValue)
+        } : nil
         link.send(WatchCommand(kind: kind, requestID: localRequest ?? UUID(), text: text, receiptID: receipt,
-                              packetCount: count, endingPlaybackID: pendingPlaybackEnd), type: "command")
+                              packetCount: count, endingPlaybackID: pendingPlaybackEnd, supportsCharacterAnimations: true,
+                              supportsPhoneReplyAudio: true, availableVoices: voices, reactionID: kind == .dance ? state.reactionID : nil), type: "command")
     }
     private func received(_ data: Data) {
         guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data) else { return }
+        if envelope.type == "replyAudioChunk" {
+            guard let chunk = try? JSONDecoder().decode(ReplyAudioChunk.self, from: envelope.payload),
+                  chunk.manifest.requestID == localRequest, spokenRequest != localRequest else { return }
+            do {
+                if let complete = try replyAssembler.accept(chunk) { pendingReplyAudio = complete }
+                if state.phase == .speaking { presentSpeech(state) }
+            } catch {
+                forcedLocalReplyID = localRequest; replyAssembler.close(); pendingReplyAudio = nil
+                if state.phase == .speaking { startLocalSpeech(state) }
+            }
+            return
+        }
         if envelope.type == "characterChunk" {
             guard let chunk = try? JSONDecoder().decode(CharacterChunk.self, from: envelope.payload) else { return }
             if let completed = try? chunkAssembler.accept(chunk) {
@@ -152,7 +185,7 @@ import WatchKit
         state = incoming
         updateTransientDeadlines()
         guard incoming.replyDevice == "watch", incoming.requestID == localRequest else {
-            stopCapture(); voice.stop(); timeout?.cancel()
+            stopCapture(); voice.stop(); stopReplyAudio(); timeout?.cancel()
             if !incoming.phase.isIdle { state.caption = "Continue on iPhone" }
             return
         }
@@ -198,19 +231,65 @@ import WatchKit
             }
         }
         if incoming.phase != .listening, capturing { stopCapture() }
-        if incoming.phase == .speaking, spokenRequest != incoming.requestID, !incoming.text.isEmpty {
-            stopCapture(); spokenRequest = incoming.requestID
-            let id = incoming.requestID
-            do { try voice.speak(incoming.text, preferredID: incoming.preferredVoiceID,
-                                 language: incoming.preferredVoiceLanguage) { [weak self] outcome in
-                guard let self else { return }
-                finishPlayback(id: id, outcome: outcome)
-            }} catch { finishPlayback(id: id, outcome: .unavailable) }
-        } else if incoming.phase != .speaking { voice.stop() }
+        if incoming.phase == .speaking { presentSpeech(incoming) }
+        else { voice.stop(); stopReplyAudio(discard: incoming.phase.isIdle) }
         if incoming.phase.isIdle { timeout?.cancel() }
+    }
+    private func presentSpeech(_ incoming: CompanionViewState) {
+        guard incoming.phase == .speaking, incoming.requestID == localRequest,
+              spokenRequest != incoming.requestID, !incoming.text.isEmpty else { return }
+        stopCapture()
+        if incoming.caption != "Preparing voice…" { replyAudioCaption = incoming.caption }
+        guard incoming.replyAudioExpected == true, let audioID = incoming.replyAudioID,
+              forcedLocalReplyID != incoming.requestID else { startLocalSpeech(incoming); return }
+        if pendingReplyAudio == nil, let request = incoming.requestID {
+            do { pendingReplyAudio = try replyAssembler.select(audioID, requestID: request) }
+            catch { startLocalSpeech(incoming); return }
+        }
+        if let clip = pendingReplyAudio, clip.manifest.id == audioID {
+            audioWait?.cancel(); audioWait = nil; waitingAudioID = nil
+            let id = incoming.requestID
+            do {
+                try replyPlayer.play(clip) { [weak self] outcome in self?.finishPlayback(id: id, outcome: outcome) }
+                state.caption = replyAudioCaption ?? CompanionPhase.speaking.title
+                spokenRequest = id; pendingReplyAudio = nil
+            } catch { startLocalSpeech(incoming) }
+        } else {
+            state.caption = "Preparing voice…"
+            if waitingAudioID != audioID {
+                waitingAudioID = audioID; audioWait?.cancel()
+                let id = incoming.requestID
+                audioWait = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(12))
+                    guard !Task.isCancelled, let self, localRequest == id, state.phase == .speaking,
+                          spokenRequest != id else { return }
+                    startLocalSpeech(state)
+                }
+            }
+        }
+    }
+    private func startLocalSpeech(_ incoming: CompanionViewState) {
+        guard let id = incoming.requestID, localRequest == id, state.phase == .speaking, spokenRequest != id else { return }
+        audioWait?.cancel(); audioWait = nil; waitingAudioID = nil
+        replyAssembler.close(); pendingReplyAudio = nil; replyPlayer.stop()
+        forcedLocalReplyID = id; spokenRequest = id
+        if incoming.replyAudioExpected == true { command(.speechFallback) }
+        state.caption = replyAudioCaption ?? CompanionPhase.speaking.title
+        let preferred = incoming.watchVoiceMode == .watch ? incoming.preferredWatchVoiceID : incoming.preferredVoiceID
+        let language = incoming.watchVoiceMode == .watch ? incoming.preferredWatchVoiceLanguage : incoming.preferredVoiceLanguage
+        do { try voice.speak(incoming.text, preferredID: preferred, language: language) { [weak self] outcome in
+            self?.finishPlayback(id: id, outcome: outcome)
+        }} catch { finishPlayback(id: id, outcome: .unavailable) }
+    }
+    private func stopReplyAudio(discard: Bool = true) {
+        audioWait?.cancel(); audioWait = nil; waitingAudioID = nil
+        replyPlayer.stop()
+        if discard { replyAssembler.close(); pendingReplyAudio = nil; replyAudioCaption = nil }
     }
     private func finishPlayback(id: UUID?, outcome: SpeechPlaybackEnd, command kind: WatchCommand.Kind = .playbackEnded) {
         guard let id, localRequest == id, state.requestID == id, state.phase == .speaking else { return }
+        stopReplyAudio(); voice.stop()
+        if outcome.failed { state.reaction = nil; state.reactionID = nil }
         timeout?.cancel(); awaitingStop = true; pendingPlaybackEnd = id
         // The text and any saved change remain intact even if the phone cannot
         // acknowledge immediately. Talk is usable as soon as local playback ends.
@@ -259,14 +338,14 @@ import WatchKit
         state.text = "Open Avatodo Settings on iPhone and allow Meta data sharing before talking."
     }
     private func unavailable() {
-        stopCapture(); awaitingStart = false; awaitingStop = false; awaitingFinish = false
+        stopCapture(); voice.stop(); stopReplyAudio(); awaitingStart = false; awaitingStop = false; awaitingFinish = false
         state.phase = .error; state.caption = "iPhone unavailable"
         state.text = "Open Avatodo on your iPhone, then try again. Check Notes for any saved changes."
     }
     private func syncCharacter(_ id: UUID?) {
-        if id == nil { characterData = nil; displayedCharacterID = nil; try? CharacterStore.reset(); waitingCharacter = nil }
+        if id == nil { characterData = nil; characterManifest = nil; displayedCharacterID = nil; try? CharacterStore.reset(); waitingCharacter = nil }
         else if displayedCharacterID == id, characterData != nil { return }
-        else if let saved = CharacterStore.load(), saved.1.id == id { characterData = saved.0; displayedCharacterID = saved.1.id }
+        else if let saved = CharacterStore.load(), saved.1.id == id { characterData = saved.0; characterManifest = saved.1; displayedCharacterID = saved.1.id }
         else if let pending = waitingCharacter, pending.1.id == id { installCharacter(pending.0, pending.1); waitingCharacter = nil }
         else { command(.character) }
     }
@@ -278,7 +357,7 @@ import WatchKit
     }
     private func installCharacter(_ image: Data, _ manifest: CharacterManifest) {
         guard manifest.id == selectedCharacterID else { return }
-        do { try CharacterStore.save(image, manifest: manifest); characterData = image; displayedCharacterID = manifest.id }
+        do { try CharacterStore.save(image, manifest: manifest); characterData = image; characterManifest = manifest; displayedCharacterID = manifest.id }
         catch { /* Keep the last valid artwork when transfer preparation fails. */ }
     }
 }

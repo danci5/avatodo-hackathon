@@ -3,44 +3,102 @@ import ImageIO
 
 struct CompanionArtwork: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     var data: Data?
     var phase: CompanionPhase
     var size: CGFloat
     var celebrationID: UUID?
-    @State private var celebrate = false
-    @State private var preparedImage: CGImage?
+    var animationLayout: CharacterAnimationLayout? = nil
+    var reaction: CompanionReaction? = nil
+    var reactionID: UUID? = nil
+    var motionEnabled = true
+    @State private var preparedFrames: [CGImage] = []
+    @State private var player = CompanionMotionPlayer(time: ProcessInfo.processInfo.systemUptime)
+    @State private var playedReactionID: UUID?
+    @State private var activeReactionID: UUID?
+    @State private var reactionTask: Task<Void, Never>?
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let amplitude = phase == .speaking ? 0.025 : 0.009
-            artwork
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !motionEnabled || scenePhase != .active)) { _ in
+            let sample = player.sample(time: ProcessInfo.processInfo.systemUptime,
+                frameCount: preparedFrames.count, reduced: reduceMotion || !motionEnabled)
+            artwork(sample.frames)
                 .frame(width: size, height: size)
-                .scaleEffect(reduceMotion ? 1 : (celebrate ? 1.06 : 1 + sin(t * (phase == .speaking ? 8 : 2)) * amplitude))
-                .rotationEffect(.degrees(reduceMotion ? 0 : (celebrate ? -5 : (phase == .listening ? sin(t * 2.5) * 1.2 : 0))))
-                .offset(y: reduceMotion ? 0 : (phase == .thinking ? sin(t * 3) * 2 : 0))
+                .scaleEffect(x: sample.scaleX, y: sample.scaleY, anchor: .bottom)
+                .rotationEffect(.degrees(sample.rotation), anchor: .bottom)
+                .offset(y: sample.lift * size)
+                // The motion player owns easing; inherited screen animations must
+                // not separately animate every 30 Hz sample.
+                .transaction { $0.animation = nil }
         }
         .frame(width: size, height: size)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Your companion")
-        .onChange(of: data, initial: true) { _, bytes in
-            preparedImage = bytes.flatMap { CGImageSourceCreateWithData($0 as CFData, nil) }
-                .flatMap { CGImageSourceCreateImageAtIndex($0, 0, nil) }
+        .accessibilityElement(children: .ignore).accessibilityLabel("Your companion")
+        .onChange(of: data, initial: true) { _, _ in prepareFrames() }
+        .onChange(of: animationLayout) { _, _ in prepareFrames() }
+        .onChange(of: phase, initial: true) { _, _ in refreshMotion() }
+        .onChange(of: celebrationID) { _, _ in
+            if phase == .confirmed {
+                player.change(to: .confirmed, time: ProcessInfo.processInfo.systemUptime,
+                    frameCount: preparedFrames.count, reduced: reduceMotion, restart: true)
+            }
         }
-        .task(id: celebrationID) {
-            guard celebrationID != nil, !reduceMotion else { return }
-            withAnimation(.spring(duration: 0.3)) { celebrate = true }
-            try? await Task.sleep(for: .milliseconds(350))
-            withAnimation(.spring(duration: 0.4)) { celebrate = false }
+        .onChange(of: reactionID, initial: true) { _, id in
+            if id == nil { stopReaction(); playedReactionID = nil }
+            refreshMotion()
+        }
+        .onChange(of: reduceMotion) { _, _ in stopReaction(); refreshMotion() }
+        .onAppear { refreshMotion() }
+        .onDisappear {
+            stopReaction()
+            player.change(to: CompanionMotionMode(phase), time: ProcessInfo.processInfo.systemUptime,
+                frameCount: preparedFrames.count, reduced: true)
         }
     }
-
-    @ViewBuilder private var artwork: some View {
-        if let image = preparedImage {
-            Image(decorative: image, scale: 1).resizable().scaledToFit()
-        } else {
-            Image("DefaultLion").resizable().scaledToFit()
+    private func refreshMotion() {
+        if !phase.isIdle || phase == .error { stopReaction() }
+        let now = ProcessInfo.processInfo.systemUptime
+        if motionEnabled, !reduceMotion, phase.isIdle, phase != .error,
+           let id = reactionID, let reaction, id != playedReactionID {
+            stopReaction(); playedReactionID = id; activeReactionID = id
+            player.change(to: reaction == .dance ? .dance : .laugh, time: now, frameCount: preparedFrames.count)
+            reactionTask = Task { @MainActor in
+                do { try await Task.sleep(for: .seconds(reaction == .dance ? 3 : 1.8)) } catch { return }
+                guard activeReactionID == id else { return }
+                activeReactionID = nil; reactionTask = nil
+                player.change(to: CompanionMotionMode(phase), time: ProcessInfo.processInfo.systemUptime,
+                    frameCount: preparedFrames.count, reduced: reduceMotion)
+            }
+        } else if activeReactionID == nil {
+            player.change(to: CompanionMotionMode(phase), time: now,
+                frameCount: preparedFrames.count, reduced: reduceMotion || !motionEnabled)
         }
+    }
+    private func stopReaction() {
+        reactionTask?.cancel(); reactionTask = nil; activeReactionID = nil
+    }
+    private func prepareFrames() {
+        stopReaction()
+        let bytes = data ?? Bundle.main.url(forResource: "DefaultLionAtlas", withExtension: "png").flatMap { try? Data(contentsOf: $0) }
+        let layout = data == nil && bytes != nil ? CharacterAnimationLayout.twentyPoseV1 : animationLayout
+        preparedFrames = bytes.flatMap { try? CharacterAnimationFrames.decode($0, layout: layout) } ?? []
+        player = CompanionMotionPlayer(mode: CompanionMotionMode(phase), time: ProcessInfo.processInfo.systemUptime)
+    }
+    @ViewBuilder private func artwork(_ weights: [CompanionFrameWeight]) -> some View {
+        if !preparedFrames.isEmpty {
+            Canvas { context, bounds in
+                // Add weighted premultiplied colors to avoid darkening the
+                // overlapping character halfway through a normal opacity fade.
+                context.blendMode = .plusLighter
+                for frame in weights where preparedFrames.indices.contains(frame.index) {
+                    let image = preparedFrames[frame.index]
+                    let scale = min(bounds.width / CGFloat(image.width), bounds.height / CGFloat(image.height))
+                    let width = CGFloat(image.width) * scale, height = CGFloat(image.height) * scale
+                    context.opacity = frame.opacity
+                    context.draw(Image(decorative: image, scale: 1).interpolation(.high),
+                        in: CGRect(x: (bounds.width - width) / 2, y: (bounds.height - height) / 2, width: width, height: height))
+                }
+            }.accessibilityHidden(true)
+        } else { Image("DefaultLion").resizable().scaledToFit() }
     }
 }
 
