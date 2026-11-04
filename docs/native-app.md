@@ -12,7 +12,11 @@ Avatodo contains an iPhone app (`Avatodo`) and paired Watch app (`AvatodoWatch`)
 
 Exact physical-device behavior is still being verified. Simulator builds do not establish reliable microphone, Watch speaker, background or locked-phone operation.
 
-## Internal TestFlight checkpoint
+## Current TestFlight status, 5 November
+
+Build **0.1.0 (9)** uploaded successfully at 00:25:35 CET with optional Drive Markdown/plain-text formats, corrected voice-preview order and the Talk/Done startup fix. Apple processing and internal availability are not yet verified because App Store Connect sign-in is stalled. Build **0.1.0 (8)** is the last verified processed internal build, with a 90-day window and saved instructions. External review/public installation remains pending. Later owner reports confirm Watch speaker replies and a real personal Drive Markdown upload; full physical acceptance of build 9, TXT preview and Muse access are still pending.
+
+## Historical build-5 TestFlight checkpoint
 
 On 4 November 2026, App Store Connect showed voice-personalization build **0.1.0 (5)** fully processed with status **Ready to Submit**, a 90-day testing window and association with the internal group’s one invited owner. Its clean archive, App Store distribution export and upload all succeeded, and What to Test was saved. Build 5 installation and Watch installation have not been confirmed. An external group exists but has no builds or testers, no Beta Review submission and no public testing link. This is not public beta or App Store approval.
 
@@ -115,7 +119,7 @@ New companion creation uses two image requests: artwork, then a reference-based 
 
 Settings → Voice → Watch reply voice offers Use iPhone voice, Automatic on Watch and reported installed Watch voices. Use iPhone voice renders a bounded short AAC reply on iPhone and sends it to Watch for playback. The voice pack stays on iPhone. Rendering/delivery/startup failures fall back once to local Watch speech; stopping playback preserves the text and saved notes. This path has wire/runtime tests and a Simulator AAC render/readback/cancellation check. Physical Premium voice parity still needs the owner's phone/Watch test.
 
-Settings → Google Drive connects the user's own account for optional outbound Markdown copies. See [Drive setup and limits](google-drive.md). Google sign-in entry and cancellation were tested in Simulator without granting an account access; the owner chose to perform real authorization and upload after the TestFlight update. These additions are included in the processed TestFlight build 7. Real Google upload and physical Premium voice parity remain pending the owner’s device test.
+Settings → Google Drive connects the user's own account for optional outbound Markdown copies. See [Drive setup and limits](google-drive.md). Google sign-in entry and cancellation were tested in Simulator without granting an account access; the owner chose to perform real authorization and upload after the TestFlight update. These additions are included in the processed TestFlight build 7. The owner later confirmed a real personal-account Markdown upload and it rendered correctly in Drive web preview. Repeated remote updates, TXT mobile preview, Muse access and physical Premium voice parity remain pending.
 
 ## Local data and recovery
 
