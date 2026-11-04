@@ -8,8 +8,8 @@ This file records verified results, not planned capabilities.
 | Local task engine | Swift 6 package built on macOS with Xcode 27.0 / Swift 6.4; 9 Swift Testing tests passed on 3 November 2026 using `bash scripts/test.sh` |
 | Application build | Not yet verified |
 | Physical iPhone/Watch | User reports version 27.2; exact models and current connection not yet verified |
-| Meta account requests | Not yet executed from this app |
-| Character pipeline | Designed; no verified Muse-generated animation package yet |
+| Meta account requests | Six direct Mac API checks passed for normal replies, checklist tools/follow-ups, image generation and reference editing; see [access evidence](meta-access-evidence.md). Not yet integrated into the native app |
+| Character pipeline | Muse Image generated artwork and an expression edit through direct Mac requests. Local preparation, animation package and native/Watch integration remain unverified |
 | UI | A separate private native SwiftUI design prototype is under review, using system typography and Liquid Glass. Its sample interactions and captures are design evidence. No production UI integrated |
 | Installable app / TestFlight | Not released; public source availability is separate from a working device release |
 | Demo video / hackathon submission | Not produced / not submitted |
