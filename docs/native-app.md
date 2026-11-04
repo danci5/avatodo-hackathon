@@ -4,12 +4,21 @@ Avatodo contains an iPhone app (`Avatodo`) and paired Watch app (`AvatodoWatch`)
 
 ## Requirements
 
-- Mac with Xcode 27 and the iOS/watchOS SDKs.
+- To build from source: a Mac with Xcode 27 and the iOS/watchOS SDKs.
 - Deployment targets: iOS 26 and watchOS 26.
-- For hardware: a compatible paired iPhone and Apple Watch, appropriate Developer Mode/signing setup, and an Apple signing team selected for both targets.
+- For Xcode development installation: a compatible paired iPhone and Apple Watch, appropriate Developer Mode/signing setup, and an Apple signing team selected for both targets. TestFlight installation uses the separate route below.
+- Age 18 or older for Meta features, as required by the provider, plus affirmative in-app data-sharing permission.
 - Your own direct Meta API access to `muse-spark-1.3` and `muse-image-1.0`. Remote model requests need internet and may incur provider charges.
 
 Exact physical-device behavior is still being verified. Simulator builds do not establish reliable microphone, Watch speaker, background or locked-phone operation.
+
+## Internal TestFlight checkpoint
+
+On 4 November 2026, App Store Connect showed **0.1.0 (2)** processed with status **Ready to Submit** and a 90-day testing window. The build is associated with the internal group, and the owner was initially shown as **Invited**. The owner subsequently reported installing and opening build 2 on iPhone. What to Test is saved. An external group exists but has no builds or testers, no Beta Review submission and no public testing link. This is not public beta or App Store approval.
+
+For the invited owner: install Apple’s TestFlight app, accept the internal invitation, choose Avatodo **0.1.0 (2)**, then install its companion on the paired Watch. Enter your own Meta key on iPhone, review the 18+ and sharing notice, and allow requests before trying speech. The first reported phone Talk/Done attempt ended with the model-authentication/access message rather than a saved result. A development-signed build 3 was then installed on phone without uninstalling to expose a safe connection check and separate HTTP 401 from 403, but that diagnostic has not been tested on the phone yet. Watch installation is still in progress and the complete physical voice flow needs acceptance; do not treat the phone app opening as that pass.
+
+Developer Mode is for development workflows such as running from Xcode; Apple states that it is not required for TestFlight installation. See [Apple’s Developer Mode guidance](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device) and [TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/). The owner reported Watch Developer Mode enabled, but the Mac connection did not confirm its current state; this does not establish a TestFlight installation blocker.
 
 ## Open and build
 
@@ -40,10 +49,11 @@ For an intentional audio experiment, set `AVATODO_ENABLE_SIMULATOR_MICROPHONE=1`
 1. Open the iPhone app and its **Settings** screen.
 2. Enter your own Meta API key and choose **Save key**.
 3. The app stores the key in iPhone Keychain. Settings supports replacement/removal without displaying the saved key.
-4. Review **Data sharing with Meta** and choose **Allow Meta requests**. This starts off; adding a key alone does not grant permission.
-5. Return to the companion and Talk, or choose **Type a message** from the conversation menu.
+4. Review **Data sharing with Meta**, including its 18+ requirement, and choose **Allow Meta requests**. This starts off; adding a key alone does not grant permission. Build 2 uses a new consent version, so an earlier build’s grant does not bypass the updated notice.
+5. In build 3, choose **Check connection**. It sends only a catalog-authentication request, without notes or inference. A key being stored does not establish access, and listed models do not establish successful inference.
+6. Return to the companion and Talk, or choose **Type a message** from the conversation menu.
 
-Permission covers both phone and Watch requests. Meta receives messages/transcriptions, temporary recent conversation and note context (including note titles/details and notes read or updated by the agent); companion creation sends its description to Muse Image. Raw Watch audio relays to iPhone for Apple speech recognition, not to Meta. **Turn off Meta requests** in Settings revokes permission and cancels outstanding model work. Already committed note changes remain saved. Manual Notes editing and the default companion remain usable without model permission.
+Permission covers both phone and Watch requests. Meta receives messages/transcriptions, temporary recent conversation and note context (including note titles/details and notes read or updated by the agent); companion creation sends its description to Muse Image. Raw Watch audio relays to iPhone for Apple speech recognition, not to Meta. **Turn off Meta requests** in Settings revokes permission and cancels outstanding model work. Already committed note changes remain saved. Manual Notes editing and the default companion remain usable without model permission. The local five-minute conversation expiry does not control Meta’s retention of content already sent. For reviewer access, follow the [external-review gate](release-evidence.md#external-review-access-gate); never assume a private key can be shared with Apple or another tester.
 
 The Watch never receives the key. A development key saved in macOS Keychain does not automatically synchronize to an iPhone. See [development setup](meta-development-setup.md) for the explicit Debug-simulator-only import helper; physical and release builds do not contain that import route.
 

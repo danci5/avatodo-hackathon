@@ -2,11 +2,11 @@
 
 The direct Meta integration uses `muse-spark-1.3` for language/tool requests and `muse-image-1.0` for artwork. Users need their own enabled [Meta Model API](https://dev.meta.ai/docs/models) access. A catalog entry alone does not prove that requests work; provider usage charges may apply.
 
-Do not paste keys into chats, source, shell command arguments or project files.
+Do not paste keys into chats, source, shell command arguments or project files. Meta features require users aged 18 or older and affirmative in-app permission. [Meta Model API Terms §3.1](https://dev.meta.ai/legal/terms-of-service) require prior written permission to share a key with a third party; an Apple reviewer or another tester must not be given the existing development key. Establish a legitimate provider-approved review route before external Beta Review. Local note editing and the default companion do not provide a substitute demonstration of live model behavior.
 
 ## iPhone app
 
-Open Avatodo's **Settings**, enter your own key and choose **Save key**. It is stored in iPhone Keychain, with replacement/removal controls. The iPhone reads it for direct Meta requests; Watch payloads contain no key. See [native app setup](native-app.md).
+Open Avatodo's **Settings**, enter your own key and choose **Save key**, then review **Data sharing with Meta** and explicitly allow requests. Build 2 requires fresh permission for its updated 18+ notice. The key is stored in iPhone Keychain, with replacement/removal controls. Saving confirms storage only. In build 3, choose **Check connection** to authenticate against the model catalog without sending notes or generating content. A listed model does not prove that inference or image creation will succeed. HTTP 401 means the key was rejected; HTTP 403 means Meta denied the request, which can involve account/model permissions or the network. The iPhone reads the key for direct Meta requests; Watch payloads contain no key. See [native app setup](native-app.md).
 
 ## Mac checks
 

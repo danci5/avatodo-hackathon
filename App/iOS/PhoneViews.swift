@@ -277,14 +277,29 @@ struct SettingsScreen: View {
         NavigationStack {
             Form {
                 Section {
-                    Label(model.state.hasModelKey ? "Key saved on this iPhone" : "Add your key", systemImage: model.state.hasModelKey ? "checkmark.shield" : "key")
+                    Label(model.state.hasModelKey ? "Key stored on this iPhone" : "Add your key", systemImage: model.state.hasModelKey ? "checkmark.shield" : "key")
                     SecureField("Meta API key", text: $key).textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive()
                     Button(model.state.hasModelKey ? "Replace key" : "Save key") {
-                        do { try model.saveKey(key); key = ""; message = "Saved in iPhone Keychain." } catch { message = error.localizedDescription }
+                        do { try model.saveKey(key); key = ""; message = "Stored in iPhone Keychain. Connection not checked." } catch { message = error.localizedDescription }
                     }.disabled(key.isEmpty)
                     if model.state.hasModelKey { Button("Remove key", role: .destructive) { do { try model.removeKey(); message = "Key removed." } catch { message = error.localizedDescription } } }
                     if let message { Text(message).font(.footnote) }
-                } header: { Text("Meta connection") } footer: { Text("Requests go directly from this iPhone to Meta. Provider access and usage charges may apply. No Avatodo account or hosted server.") }
+                    Button {
+                        message = nil
+                        Task { await model.checkConnection() }
+                    } label: {
+                        HStack {
+                            Text(model.checkingConnection ? "Checking connection…" : "Check connection")
+                            if model.checkingConnection { Spacer(); ProgressView() }
+                        }
+                    }
+                    .disabled(model.checkingConnection || !model.state.hasModelKey || !model.metaDataSharingAllowed || !key.isEmpty)
+                    if let status = model.connectionStatus {
+                        Text(status).font(.footnote).accessibilityLabel("Connection check: " + status)
+                    }
+                } header: { Text("Meta connection") } footer: {
+                    Text("Saving stores your key. Check connection tests your key and lists available models without sending notes or generating content. Try Talk or companion creation to check those features. Requests go directly to Meta; usage charges may apply.")
+                }
                 Section {
                     Text("Meta AI features are for people aged 18 or older. By allowing Meta requests, you confirm that you meet this requirement.")
                     Text("Meta receives your messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
@@ -314,6 +329,9 @@ struct SettingsScreen: View {
                     Link("Source code", destination: URL(string: "https://github.com/danci5/avatodo-hackathon")!)
                 }
             }.navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
+                .onChange(of: key) { _, value in
+                    if !value.isEmpty { model.resetConnectionStatus(); message = nil }
+                }
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
     }

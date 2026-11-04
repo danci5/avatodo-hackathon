@@ -5,9 +5,23 @@ import AvatodoCore
 /// The credential is read into memory from the development Mac Keychain, never printed.
 @main struct AvatodoProbe {
     static func main() async {
+        if CommandLine.arguments.contains("--check-access") {
+            do {
+                let access = try await MetaClient().checkAccess(key: developmentKey())
+                print("Mac catalog authentication: PASS.")
+                print("Muse Spark listed: \(access.languageModelAvailable). Muse Image listed: \(access.imageModelAvailable).")
+                print("No notes, inference or image requests sent. This does not verify the iPhone’s stored key.")
+            } catch let error as MetaError {
+                print("Mac catalog check: " + (error.errorDescription ?? "Request failed.")); exit(1)
+            } catch {
+                print("Mac catalog check could not finish. No credentials or provider body were printed."); exit(1)
+            }
+            return
+        }
         guard CommandLine.arguments.contains("--run-live") else {
             print("Avatodo live Swift check — no API requests sent.")
             print("Run: swift run AvatodoProbe --run-live [--output artifacts/meta-swift-check/results.json]")
+            print("Or: swift run AvatodoProbe --check-access (catalog authentication only; no inference)")
             print("Uses your saved development Meta key and makes up to 16 billable model requests with fictional notes.")
             return
         }

@@ -12,6 +12,8 @@ import AvatodoCore
     var scopedNoteID: UUID?
     var setupError: String?
     var alert: String?
+    var checkingConnection = false
+    var connectionStatus: String?
     var canControl: Bool { state.phase.isIdle || !watchOrigin }
     var metaDataSharingAllowed: Bool { state.hasDataSharingConsent == true }
     var generating = false
@@ -21,6 +23,8 @@ import AvatodoCore
     }
     private let consent = MetaDataSharingConsent()
     private var characterRequest: Task<Data, Error>?
+    private var connectionCheckTask: Task<MetaAccessCheck, Error>?
+    private var connectionCheckID = UUID()
     private var store: LocalTaskStore?
     private var agent: CompanionAgent?
     private let microphone = MicrophoneCapture()
@@ -70,10 +74,72 @@ import AvatodoCore
         Task { await refreshNotes() }
     }
     func refreshKey() { state.hasModelKey = ((try? KeychainStore.load()) ?? nil) != nil; publish() }
-    func saveKey(_ key: String) throws { try KeychainStore.save(key); refreshKey() }
-    func removeKey() throws { try KeychainStore.remove(); refreshKey() }
+    func saveKey(_ key: String) throws {
+        try KeychainStore.save(key); resetConnectionStatus(); refreshKey()
+    }
+    func removeKey() throws {
+        try KeychainStore.remove(); resetConnectionStatus(); refreshKey()
+    }
+    func resetConnectionStatus() {
+        connectionCheckID = UUID(); connectionCheckTask?.cancel(); connectionCheckTask = nil
+        checkingConnection = false; connectionStatus = nil
+    }
+    func checkConnection() async {
+        guard !checkingConnection else { return }
+        let id = UUID(); connectionCheckID = id
+        checkingConnection = true; connectionStatus = nil
+        defer {
+            if connectionCheckID == id { checkingConnection = false; connectionCheckTask = nil }
+        }
+        do {
+            try consent.requirePermission()
+            guard let key = try KeychainStore.load() else { throw MetaError.missingKey }
+            let request = Task { try await MetaClient().checkAccess(key: key) }
+            connectionCheckTask = request
+            let access = try await request.value
+            guard connectionCheckID == id, consent.isGranted else { return }
+            switch (access.languageModelAvailable, access.imageModelAvailable) {
+            case (true, true):
+                connectionStatus = "Key accepted; Muse Spark and Muse Image are listed."
+            case (true, false):
+                connectionStatus = "Key accepted; Muse Spark is listed, but Muse Image is not."
+            case (false, true):
+                connectionStatus = "Key accepted; Muse Image is listed, but Muse Spark is not."
+            case (false, false):
+                connectionStatus = "Key accepted, but neither required model is listed for this account."
+            }
+        } catch is CancellationError {
+            // A changed key or revoked permission invalidates this result.
+        } catch let error as MetaError {
+            setConnectionStatus(error.localizedDescription, for: id)
+        } catch let error as URLError {
+            let message: String
+            switch error.code {
+            case .cancelled: return
+            case .notConnectedToInternet: message = "Connect to the internet, then check again."
+            case .timedOut: message = "Meta did not respond in time. Try again."
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                message = "This network could not reach Meta. Check the connection and try again."
+            case .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot:
+                message = "A secure connection to Meta could not be established."
+            default: message = "The connection check failed (network \(error.code.rawValue)). Try again."
+            }
+            setConnectionStatus(message, for: id)
+        } catch is MetaConsentError {
+            setConnectionStatus(MetaConsentError.permissionRequired.localizedDescription, for: id)
+        } catch is KeychainError {
+            setConnectionStatus("Unlock this iPhone to access the saved key, then try again.", for: id)
+        } catch {
+            setConnectionStatus("The connection check could not finish. Try again.", for: id)
+        }
+    }
+    private func setConnectionStatus(_ message: String, for id: UUID) {
+        guard connectionCheckID == id else { return }
+        connectionStatus = message
+    }
     func setMetaDataSharingAllowed(_ allowed: Bool) {
         consent.setGranted(allowed)
+        resetConnectionStatus()
         state.hasDataSharingConsent = allowed
         if !allowed {
             characterRequest?.cancel()
