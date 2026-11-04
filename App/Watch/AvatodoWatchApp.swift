@@ -28,7 +28,7 @@ struct WatchCompanion: View {
                         .frame(height: max(0, geometry.size.height - 90 - 28 - 52 - 8), alignment: .top)
                         .background(model.state.text.isEmpty ? Color.clear : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
                         .clipShape(RoundedRectangle(cornerRadius: 14)).padding(.bottom, 8)
-                    ConversationControls(phase: model.state.phase, showUndo: model.showUndo, height: 52,
+                    ConversationControls(phase: model.state.controlsPhase, showUndo: model.showUndo, height: 52,
                         primary: { model.primary() }, undo: { model.undo() })
                         .disabled(!model.canControl)
                 }.frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)

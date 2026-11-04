@@ -45,6 +45,12 @@ struct CompanionViewState: Codable, Sendable, Equatable {
     var hasModelKey = false
     var hasDataSharingConsent: Bool?
     var speechReady = false
+    // Optional for older paired apps. Setup is cancellable capture preparation,
+    // not an agent request, so its primary control already presents Done.
+    var preparingToListen: Bool?
+    var controlsPhase: CompanionPhase {
+        phase == .thinking && preparingToListen == true ? .listening : phase
+    }
     var preferredVoiceID: String?
     var preferredVoiceLanguage: String?
     var watchVoiceMode: WatchVoiceMode?

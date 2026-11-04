@@ -282,8 +282,10 @@ import AvatodoCore
         }
         link.sendState(watchState)
     }
-    private func setPhase(_ phase: CompanionPhase, caption: String? = nil, text: String? = nil) {
+    private func setPhase(_ phase: CompanionPhase, caption: String? = nil, text: String? = nil,
+                          preparingToListen: Bool = false) {
         state.phase = phase; state.caption = caption ?? phase.title
+        state.preparingToListen = preparingToListen ? true : nil
         if let text { state.text = text }
         publish()
     }
@@ -313,14 +315,14 @@ import AvatodoCore
         state.undoReceiptID = nil; state.noteTitle = scope.flatMap { note($0)?.title }; state.noteID = scope
         scopedNoteID = scope; watchOrigin = fromWatch; requestID = id; state.requestID = id
         state.replyDevice = fromWatch ? "watch" : "phone"
-        frames = [:]; nextFrame = 0; audioRate = nil; audioFailed = false; acceptingAudio = false
+        frames = [:]; nextFrame = 0; audioRate = nil; audioFailed = false; acceptingAudio = false; state.speechReady = false
         if fromWatch {
             if recentVoiceRequests.count >= 80 { recentVoiceRequests.removeAll() }
             recentVoiceRequests.insert(id)
         }
         if fromWatch { startBackgroundWork() }
         // Request authorization before the Watch starts sending audio.
-        setPhase(.thinking, caption: "Preparing microphone…", text: "")
+        setPhase(.thinking, caption: "Preparing microphone…", text: "", preparingToListen: true)
         work = Task { [weak self] in
             guard let self else { return }
             defer { work = nil }
@@ -340,7 +342,6 @@ import AvatodoCore
                 try Task.checkCancellation()
                 guard requestID == id else { return }
                 state.speechReady = true; acceptingAudio = true
-                setPhase(.listening, text: "")
                 if !fromWatch {
                     try await microphone.start { [weak self] data, rate in
                         guard let self, self.requestID == id, self.acceptingAudio else { return }
@@ -351,6 +352,9 @@ import AvatodoCore
                         self.audioFailed = true; self.cancel(message: failure.localizedDescription)
                     }
                 }
+                try Task.checkCancellation()
+                guard requestID == id else { return }
+                setPhase(.listening, text: "")
                 captureTimer = Task { [weak self] in
                     try? await Task.sleep(for: .seconds(fromWatch ? 30 : 60))
                     guard !Task.isCancelled, self?.requestID == id else { return }
@@ -519,7 +523,8 @@ import AvatodoCore
         stopReplyAudio()
         cancellationMessage = message; acceptingAudio = false
         captureTimer?.cancel(); microphone.stop(); recognition.cancel(); work?.cancel()
-        if work != nil { setPhase(.thinking, caption: "Stopping…", text: message) }
+        if work != nil { setPhase(.thinking, caption: "Stopping…", text: message,
+                                 preparingToListen: state.preparingToListen == true) }
         else { finishCancelled() }
     }
     private func finishCancelled() {

@@ -8,7 +8,7 @@ import WatchKit
     var characterManifest: CharacterManifest?
     var reachable = false
     var showUndo = false
-    var canControl: Bool { state.phase.isIdle || (state.replyDevice == "watch" && state.requestID == localRequest) }
+    var canControl: Bool { state.phase.isIdle || (!awaitingStop && state.replyDevice == "watch" && state.requestID == localRequest) }
     private let link = CompanionLink()
     private let microphone = MicrophoneCapture()
     private let voice = DeviceVoice()
@@ -87,6 +87,7 @@ import WatchKit
         state.requestID = id; state.replyDevice = "watch"
         state.reaction = nil; state.reactionID = nil
         state.phase = .thinking; state.caption = "Connecting…"; state.text = ""
+        state.preparingToListen = true
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         command(.begin); waitForReply(seconds: 20)
     }
@@ -100,6 +101,7 @@ import WatchKit
         state.requestID = id; state.replyDevice = "watch"
         state.reaction = nil; state.reactionID = nil
         state.phase = .thinking; state.caption = "Thinking…"; state.text = text
+        state.preparingToListen = nil
         state.undoReceiptID = nil; state.undoExpiresAt = nil; state.sessionExpiresAt = nil
         command(.text, text: text); waitForReply(seconds: 90)
     }
@@ -108,6 +110,7 @@ import WatchKit
         if microphoneTask != nil && packetCount == 0 {
             stopCapture(); awaitingStart = false; awaitingStop = true
             state.phase = .thinking; state.caption = "Stopping…"; state.text = ""
+            state.preparingToListen = true
             command(.cancel); waitForReply(seconds: 15); return
         }
         awaitingFinish = true
@@ -176,7 +179,8 @@ import WatchKit
         syncCharacter(incoming.characterID)
         // A late status for the previous turn cannot replace a just-started recording.
         if awaitingStart, incoming.requestID != localRequest, incoming.phase.isIdle, incoming.phase != .error { return }
-        if awaitingStop, incoming.requestID == localRequest, incoming.phase == .speaking { return }
+        // Done during setup must not let a late listening state restart capture.
+        if awaitingStop, incoming.requestID == localRequest, !incoming.phase.isIdle { return }
         // Late partial/state delivery cannot restart capture after local Done.
         if awaitingFinish, incoming.requestID == localRequest, incoming.phase == .listening { return }
         if incoming.requestID == localRequest, incoming.phase != .listening { awaitingFinish = false }

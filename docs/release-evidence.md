@@ -1,6 +1,12 @@
 # Release evidence
 
-## Current TestFlight checkpoint, 4 November, build 7
+## Build 8 startup-control candidate, 4 November
+
+A user-reported Talk → Cancel → Done flash came from treating microphone/Watch connection setup as an agent-thinking state. Setup now presents Done immediately while retaining the honest Connecting/Preparing microphone caption. Actual agent requests still present Cancel. Done during setup cancels without submitting input; late busy Watch states cannot restart capture after this stop. The phone changes to Listening only after its microphone startup succeeds. The added optional presentation field remains compatible with older paired state messages.
+
+Both native Simulator targets build and 49 core tests pass; existing voice/wire and consent checks pass. A recorded native Watch startup shows Connecting with Done and no intermediate Cancel. The Simulator's intentionally disabled microphone then produces its expected capture-unavailable message; this is not physical speech acceptance. Build 8 is not yet uploaded at this source checkpoint.
+
+## Historical TestFlight checkpoint, 4 November, build 7
 
 **0.1.0 (7)** is uploaded and fully processed as Ready to Submit, with a 90-day window and assignment to Avatodo Internal (one invited owner). What to Test was saved and read back. Native source is `67d39ece4ad79ddd7103445ad07717420a3e38ad`, private-pushed and remote-verified. Upload completed at 22:25:22 UTC / 23:25 CET. Apple build ID is `2ac4e43c-e473-4805-90a1-285b3d525ebb`. The clean signed archive and unrestricted App Store export verified both bundles. The separately verified local IPA is 13,993,447 bytes, SHA-256 `2c56c11589c98fad73211fbda326e3e78963038ae982e7ce9a492b6a5093379b`; this is not a hash of the uploaded byte stream. It adds optional personal Google Drive Markdown copies, inline note title/body editing, cached state/dance/laugh frame animation on phone and Watch, phone-generated reply audio with local Watch fallback, and the saved Spark/Wonder reasoning choice. The app still has no hosted Avatodo backend.
 
