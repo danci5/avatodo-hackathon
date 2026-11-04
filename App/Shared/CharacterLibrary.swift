@@ -35,7 +35,7 @@ struct CharacterLibrary {
     }
 
     @discardableResult func add(_ image: Data, manifest: CharacterManifest) throws -> CharacterLibrarySnapshot {
-        guard metadataValid(manifest), CharacterStore.valid(image),
+        guard metadataValid(manifest), CharacterStore.valid(image, manifest: manifest),
               CharacterStore.digest(image) == manifest.sha256 else { throw CharacterLibraryFailure.invalidArtwork }
         let previous = try readIndex()
         guard !previous.characters.contains(where: { $0.id == manifest.id }) else { throw CharacterLibraryFailure.invalidArtwork }
@@ -48,6 +48,21 @@ struct CharacterLibrary {
         mirrorSelection(next)
         pruneImages(keeping: Set(next.characters.map(\.id)))
         return snapshot(next)
+    }
+
+    @discardableResult func replace(_ id: UUID, image: Data, manifest: CharacterManifest) throws -> CharacterLibrarySnapshot {
+        guard manifest.id != id, metadataValid(manifest), CharacterStore.valid(image, manifest: manifest),
+              CharacterStore.digest(image) == manifest.sha256 else { throw CharacterLibraryFailure.invalidArtwork }
+        var index = try readIndex()
+        guard let position = index.characters.firstIndex(where: { $0.id == id }),
+              !index.characters.contains(where: { $0.id == manifest.id }) else { throw CharacterLibraryFailure.invalidArtwork }
+        index.characters[position] = manifest
+        if index.selectedID == id { index.selectedID = manifest.id }
+        try image.write(to: imageURL(manifest.id), options: .atomic)
+        do { try writeIndex(index) }
+        catch { try? FileManager.default.removeItem(at: imageURL(manifest.id)); throw error }
+        mirrorSelection(index); pruneImages(keeping: Set(index.characters.map(\.id)))
+        return snapshot(index)
     }
 
     @discardableResult func select(_ id: UUID?) throws -> CharacterLibrarySnapshot {
@@ -88,7 +103,7 @@ struct CharacterLibrary {
     }
 
     private func readImage(_ manifest: CharacterManifest) -> Data? {
-        guard let image = try? Data(contentsOf: imageURL(manifest.id)), CharacterStore.valid(image),
+        guard let image = try? Data(contentsOf: imageURL(manifest.id)), CharacterStore.valid(image, manifest: manifest),
               CharacterStore.digest(image) == manifest.sha256 else { return nil }
         return image
     }

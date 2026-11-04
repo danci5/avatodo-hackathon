@@ -80,3 +80,28 @@ private actor FixtureMetaTransport: MetaTransport {
     #expect(body["messages"].array == messages)
     #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
 }
+
+@Test func reasoningSelectionIsAllowlistedAndDefaultsToSpark() async throws {
+    #expect(MetaReasoningModel(savedValue: nil) == .spark)
+    #expect(MetaReasoningModel(savedValue: "unknown-model") == .spark)
+    #expect(MetaReasoningModel(savedValue: "muse-wonder-1.0") == .wonder)
+    for choice in MetaReasoningModel.allCases {
+        let transport = FixtureMetaTransport(body: #"{"choices":[{"message":{"content":"Hello"}}]}"#)
+        _ = try await MetaClient(reasoningModel: choice, transport: transport)
+            .complete(messages: [], tools: [], key: "fixture-key")
+        let request = try #require(await transport.requests.first)
+        let body = try JSONDecoder().decode(JSONValue.self, from: #require(request.httpBody))
+        #expect(body["model"].string == choice.rawValue)
+        #expect(body["parallel_tool_calls"].bool == false)
+    }
+}
+
+@Test func connectionCheckReportsTheSelectedReasoningModel() async throws {
+    let catalog = #"{"data":[{"id":"muse-spark-1.3"},{"id":"muse-image-1.0"}]}"#
+    let wonder = try await MetaClient(reasoningModel: .wonder, transport: FixtureMetaTransport(body: catalog))
+        .checkAccess(key: "fixture-key")
+    #expect(!wonder.languageModelAvailable && wonder.imageModelAvailable)
+    let spark = try await MetaClient(reasoningModel: .spark, transport: FixtureMetaTransport(body: catalog))
+        .checkAccess(key: "fixture-key")
+    #expect(spark.languageModelAvailable && spark.imageModelAvailable)
+}

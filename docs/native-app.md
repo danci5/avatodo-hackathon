@@ -8,7 +8,7 @@ Avatodo contains an iPhone app (`Avatodo`) and paired Watch app (`AvatodoWatch`)
 - Deployment targets: iOS 26 and watchOS 26.
 - For Xcode development installation: a compatible paired iPhone and Apple Watch, appropriate Developer Mode/signing setup, and an Apple signing team selected for both targets. TestFlight installation uses the separate route below.
 - Age 18 or older for Meta features, as required by the provider, plus affirmative in-app data-sharing permission.
-- Your own direct Meta API access to `muse-spark-1.3` and `muse-image-1.0`. Remote model requests need internet and may incur provider charges.
+- Your own direct Meta API access to `muse-spark-1.3` (or optional `muse-wonder-1.0`) and `muse-image-1.0`. Remote model requests need internet and may incur provider charges.
 
 Exact physical-device behavior is still being verified. Simulator builds do not establish reliable microphone, Watch speaker, background or locked-phone operation.
 
@@ -101,6 +101,22 @@ If live transcription stays empty, test on the actual unlocked iPhone after endi
 
 The phone may receive Watch work during a finite background window, but the complete foreground/background/locked/force-quit path needs hardware testing. Keep the apps open during initial development checks. An unavailable phone or delayed reply must not be interpreted as proof that nothing was saved; inspect Notes before repeating a request whose result is uncertain.
 
+## Inline note editing (next release source)
+
+Tap a saved note's title or body to type directly on the note screen. There is no separate edit sheet or pencil action. Changes save after a 600 ms pause, when editing ends, when leaving the note and when the app becomes inactive. An empty title saves as “Untitled”. The keyboard's Done control ends typing; it is not a separate save requirement. New-note creation still has its own composer.
+
+Opening “Update this note”, checking checklist items or using note Undo first flushes pending typing. Title/body edits preserve simultaneous changes to untouched fields and checklist items. If both typing and the agent changed the same field, automatic saving stops and retains the typed draft in memory instead of overwriting the saved version. The note shows Retry save and an explicit Use saved version action. Store failures retain the draft while the app process remains alive; drafts that have not been saved are not a durable backup.
+
+Verification: 46 package tests pass, including seven inline-edit cases covering automatic saving, reopening/Undo, concurrent voice edits, conflict recovery, in-flight typing and validation. The native phone/Watch Simulator build passes. On the iPhone Simulator, directly edited title/body values were checked in the saved snapshot and after navigating away and reopening. This source change is not in the already processed TestFlight build 6.
+
+## Next-release animation, Watch voice and Drive source
+
+New companion creation uses two image requests: artwork, then a reference-based 20-frame sheet. Preparation and playback are local. If the sheet cannot be prepared, the saved base artwork stays usable and Animate this companion retries it. Preview animations cycles the states; Regenerate animations can replace an existing custom pack using its first frame as the identity reference. The same cached companion is delivered to Watch. Tap an idle companion on either device to dance. Pose changes have a 240 ms blend; breathing and sway are continuous local transforms. These effects are frame animation, not a 3D body rig or phoneme-driven lip synchronization. Every state has an assigned visual; errors use a calm neutral pose with the actual error message. Reduce Motion disables motion.
+
+Settings → Voice → Watch reply voice offers Use iPhone voice, Automatic on Watch and reported installed Watch voices. Use iPhone voice renders a bounded short AAC reply on iPhone and sends it to Watch for playback. The voice pack stays on iPhone. Rendering/delivery/startup failures fall back once to local Watch speech; stopping playback preserves the text and saved notes. This path has wire/runtime tests and a Simulator AAC render/readback/cancellation check. Physical Premium voice parity still needs the owner's phone/Watch test.
+
+Settings → Google Drive connects the user's own account for optional outbound Markdown copies. See [Drive setup and limits](google-drive.md). Google sign-in entry and cancellation were tested in Simulator without granting an account access; the owner chose to perform real authorization and upload after the TestFlight update. These additions require the next TestFlight build; they are not in build 6.
+
 ## Local data and recovery
 
 The app saves an atomic JSON snapshot under its protected Application Support `Notes/notes.json` folder. The snapshot contains notes, revisions and edit/retry receipts, including before/after note values for safe Undo. Character PNGs and a manifest are cached separately under Application Support `Companion`. Keys are in Keychain. Recorded audio and conversational messages are not saved as an archive.
@@ -108,3 +124,9 @@ The app saves an atomic JSON snapshot under its protected Application Support `N
 One `LocalTaskStore` actor owns the notes file. If saved data cannot be opened, the app preserves it and presents an error rather than silently replacing it with an empty notebook. Back up important notes before testing unfinished builds. Key removal, Start fresh and companion changes do not erase notes.
 
 For current test scope and outstanding gates, see [release evidence](release-evidence.md).
+
+## Choose the reasoning model
+
+In iPhone Settings, tap **About → Reasoning** and choose **Muse Spark** (default) or **Muse Wonder**. The choice is saved locally and applies to both phone and paired Watch requests. Change it between replies; it does not clear temporary conversation or active note identity. Each complete tool loop keeps one model. Check connection tests the selected model against the catalog; unavailable access is reported without silently substituting another model. Artwork still uses Muse Image.
+
+The live production Swift Wonder check passed seven checks with fictional groceries: ordinary reply without a note, checklist creation, duplicate-request recovery, scoped correction, checking off two items, persistence readback and Undo. This is Mac shared-agent evidence, not physical phone or Watch inference evidence.

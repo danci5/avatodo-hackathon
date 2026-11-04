@@ -64,6 +64,26 @@ public actor LocalTaskStore {
 
     public func receipt(id: UUID) -> MutationReceipt? { snapshot.receipts[id] }
 
+    /// Inline typing changes only the fields the person actually edited. Compare
+    /// and commit in this actor turn so a simultaneous agent edit cannot be lost.
+    public func saveTextEdit(base: Note, title: String, body: String) throws -> Note {
+        let current = try note(id: base.id)
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = trimmed.isEmpty ? "Untitled" : trimmed
+        let editsTitle = title != base.title
+        let editsBody = body != base.body
+        guard !editsTitle || current.title == base.title || current.title == title,
+              !editsBody || current.body == base.body || current.body == body else {
+            throw NoteTextEditingError.conflict
+        }
+        let newTitle = editsTitle && current.title != title ? title : nil
+        let newBody = editsBody && current.body != body ? body : nil
+        guard newTitle != nil || newBody != nil else { return current }
+        let saved = try perform(MutationRequest(action: .edit(id: base.id, revision: current.revision,
+            title: newTitle, body: newBody)))
+        return saved.after!
+    }
+
     /// Returns only a change whose revision still matches the current note.
     /// This restores note-specific Undo availability after restarting the app.
     public func undoableReceiptID(for noteID: UUID) -> UUID? {

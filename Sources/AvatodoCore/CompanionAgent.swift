@@ -1,10 +1,13 @@
 import Foundation
 
+public enum AgentCompanionReaction: String, Codable, Sendable { case laugh, dance }
+
 public struct AgentOutcome: Codable, Equatable, Sendable {
     public let reply: String
     public let receipts: [MutationReceipt]
     public let activeNoteID: UUID?
     public var recoveredRequest = false
+    public var reaction: AgentCompanionReaction? = nil
 }
 
 /// Temporary conversation only. No messages or summaries are written to disk.
@@ -46,8 +49,12 @@ public actor CompanionAgent {
     }
 
     public func respond(to text: String, requestID: UUID = UUID(), key: String,
-                        scopedTo scope: UUID? = nil, companionName: String = "Ava") async throws -> AgentOutcome {
+                        scopedTo scope: UUID? = nil, companionName: String = "Ava",
+                        using selectedModel: (any LanguageModel)? = nil) async throws -> AgentOutcome {
         guard !isRunning else { throw AgentError.busy }
+        // Snapshot the provider for this entire tool loop. Switching on the next turn
+        // preserves temporary conversation, active note identity and retry receipts.
+        let turnModel = selectedModel ?? model
         let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty, input.count <= 20_000 else { throw AgentError.invalidArguments }
         let trimmedName = String(companionName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))
@@ -101,6 +108,11 @@ public actor CompanionAgent {
         the corresponding tool reports committed=true. Use actual tool results for counts and names.
         Do not repeat a successful mutation. Undo uses the actual receipt ID. Do not claim to send
         messages, shop, access external assistants or perform actions outside these local note tools.
+        The companion_animation tool queues a short local visual reaction without changing notes.
+        Use dance only when asked to dance. Use laugh only when explicitly asked to laugh, or after
+        telling a joke the person requested. Never infer laughter from saved note content, an error,
+        serious requests or task completion. Queue at most one reaction per reply. It plays after
+        speech ends; do not claim that a visual reaction saved or changed a note.
         """
         let prefix: [JSONValue] = [
             .object(["role": .string("system"), "content": .string(instructions)]),
@@ -111,6 +123,7 @@ public actor CompanionAgent {
         var successfulCalls: [(String, JSONValue, AgentToolResult)] = []
         var mutationIndex = 0
         var failedMutations: Set<String> = []
+        var reaction: AgentCompanionReaction?
 
         do {
             for _ in 0..<8 {
@@ -119,8 +132,8 @@ public actor CompanionAgent {
                       (try? JSONValue.array(history.flatMap { $0 }).jsonString().count) ?? 0 > 90_000 {
                     history.removeFirst()
                 }
-                let response = try await model.complete(messages: prefix + history.flatMap { $0 } + exchange,
-                                                        tools: NoteTools.catalog, key: key)
+                let response = try await turnModel.complete(messages: prefix + history.flatMap { $0 } + exchange,
+                                                        tools: NoteTools.catalog + [Self.animationTool], key: key)
                 try Task.checkCancellation()
                 guard let message = response["choices"].array?.first?["message"], message.object != nil else {
                     throw MetaError.invalidResponse
@@ -134,7 +147,8 @@ public actor CompanionAgent {
                         : "Some changes were saved, but I couldn’t finish every change. Please check your notes.")
                     exchange.append(.object(["role": .string("assistant"), "content": .string(finalReply)]))
                     remember(exchange)
-                    let result = AgentOutcome(reply: finalReply, receipts: receipts, activeNoteID: activeNoteID)
+                    let result = AgentOutcome(reply: finalReply, receipts: receipts, activeNoteID: activeNoteID,
+                                              reaction: failedMutations.isEmpty ? reaction : nil)
                     cache(result, for: requestID, fingerprint: fingerprint)
                     return result
                 }
@@ -152,7 +166,13 @@ public actor CompanionAgent {
                     do {
                         guard raw.utf8.count <= 256_000 else { throw AgentError.invalidArguments }
                         let arguments = try JSONDecoder().decode(JSONValue.self, from: Data(raw.utf8))
-                        if let previous = successfulCalls.first(where: { $0.0 == name && $0.1 == arguments }) {
+                        if name == "companion_animation" {
+                            guard arguments.object?.count == 1, let raw = arguments["animation"].string,
+                                  let selected = AgentCompanionReaction(rawValue: raw),
+                                  reaction == nil || reaction == selected else { throw AgentError.invalidArguments }
+                            reaction = selected
+                            value = .object(["queued": .bool(true), "animation": .string(selected.rawValue), "note_changed": .bool(false)])
+                        } else if let previous = successfulCalls.first(where: { $0.0 == name && $0.1 == arguments }) {
                             value = previous.2.value
                         } else {
                             let mutationID = Self.mutationID(for: requestID, index: mutationIndex)
@@ -170,7 +190,7 @@ public actor CompanionAgent {
                     } catch is CancellationError { throw CancellationError() }
                     catch {
                         value = NoteTools.failure(error)
-                        if name != "search_notes" && name != "read_note" { failedMutations.insert(errorKey) }
+                        if name != "search_notes" && name != "read_note" && name != "companion_animation" { failedMutations.insert(errorKey) }
                     }
                     exchange.append(.object(["role": .string("tool"), "tool_call_id": .string(id),
                                              "content": .string(try value.jsonString())]))
@@ -203,4 +223,10 @@ public actor CompanionAgent {
         }
         return UUID(uuid: bytes)
     }
+    private static let animationTool: JSONValue = .object(["type": .string("function"), "function": .object([
+        "name": .string("companion_animation"), "description": .string("Queue a brief visual dance or laugh after the reply. Never changes notes. Use only for an explicit dance/laugh request or after telling a requested joke."),
+        "strict": .bool(true), "parameters": .object(["type": .string("object"),
+            "properties": .object(["animation": .object(["type": .string("string"), "enum": .array([.string("laugh"), .string("dance")])])]),
+            "required": .array([.string("animation")]), "additionalProperties": .bool(false)])
+    ])])
 }

@@ -32,6 +32,26 @@ private func create(_ title: String = "Grocery run") -> MutationRequest {
     MutationRequest(action: .create(id: UUID(), kind: .checklist, title: title, body: "", items: [ChecklistItem(text: "Milk")]))
 }
 
+@Test func switchingModelPreservesConversationNoteScopeAndCachedRequests() async throws {
+    let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
+    let noteID = try await store.perform(create()).after!.id
+    let first = ScriptedLanguageModel([response("Your grocery list is open.")])
+    let next = ScriptedLanguageModel([response("Milk is still on your list.")])
+    let agent = CompanionAgent(store: store, model: first)
+    let id = UUID()
+    let original = try await agent.respond(to: "Let's talk about my groceries.", requestID: id, key: "fixture", scopedTo: noteID)
+    _ = try await agent.respond(to: "What is on it?", key: "fixture", using: next)
+    #expect(await agent.activeNoteID == noteID)
+    let messages = try #require(await next.invocations.first)
+    #expect(messages.contains { $0["content"].string == "Your grocery list is open." })
+    #expect(messages[1]["content"].string?.contains(noteID.uuidString) == true)
+    let replay = try await agent.respond(to: "Let's talk about my groceries.", requestID: id, key: "fixture", scopedTo: noteID, using: next)
+    #expect(replay == original)
+    #expect(await first.count == 1)
+    #expect(await next.count == 1)
+    #expect(await store.notes().count == 1)
+}
+
 @Test func currentCompanionNameIsSentEachTurnAndOverridesEarlierIdentity() async throws {
     let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
     let model = ScriptedLanguageModel([response("I'm Nikola."), response("I'm Ava.")])
@@ -73,6 +93,32 @@ private func create(_ title: String = "Grocery run") -> MutationRequest {
     #expect(await agent.startFresh())
     #expect(await agent.recentTurnCount == 0)
     #expect(await agent.activeNoteID == nil)
+}
+
+@Test func companionReactionsDoNotMutateNotesAndRequestRetriesAreCached() async throws {
+    for reaction in ["dance", "laugh"] {
+        let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
+        let model = ScriptedLanguageModel([
+            try toolResponse("companion_animation", .object(["animation": .string(reaction)])), response("Here you go!")])
+        let agent = CompanionAgent(store: store, model: model), id = UUID()
+        let result = try await agent.respond(to: "Please " + reaction, requestID: id, key: "fixture")
+        #expect(result.reaction?.rawValue == reaction && result.receipts.isEmpty)
+        #expect(await store.notes().isEmpty)
+        #expect(try await agent.respond(to: "Please " + reaction, requestID: id, key: "fixture") == result)
+        #expect(await model.count == 2)
+    }
+}
+
+@Test func aFailedNoteMutationCannotEndInACelebratoryReaction() async throws {
+    let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
+    let model = ScriptedLanguageModel([
+        try toolResponse("delete_note", .object(["note_id": .string(UUID().uuidString), "revision": .number(1)])),
+        try toolResponse("companion_animation", .object(["animation": .string("laugh")])), response("Done!")])
+    let agent = CompanionAgent(store: store, model: model)
+    let result = try await agent.respond(to: "Delete that note", key: "fixture")
+    #expect(result.reaction == nil && result.receipts.isEmpty)
+    #expect(result.reply.contains("couldn’t save"))
+    #expect(await store.notes().isEmpty)
 }
 
 @Test func activeNoteSurvivesHistoryEvictionAndTwentyAdditions() async throws {

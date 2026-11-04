@@ -30,6 +30,14 @@ import UniformTypeIdentifiers
         precondition(reset.selected == nil && reset.characters.count == 3)
         print("PASS gallery survives reopening, retains newest three, selects older without reordering, preserves Ava separately")
 
+        _ = try library.select(third.id)
+        let replacement = manifest("Three animated")
+        let upgraded = try library.replace(third.id, image: image, manifest: replacement)
+        precondition(upgraded.selectedID == replacement.id)
+        precondition(upgraded.characters.map(\.id) == [fourth.id, replacement.id, second.id])
+        precondition(!FileManager.default.fileExists(atPath: root.appendingPathComponent(third.id.uuidString + ".png").path))
+        print("PASS adding animation atomically replaces one gallery entry and preserves creation order")
+
         let corrupt = root.appendingPathComponent("library.json")
         try Data("broken".utf8).write(to: corrupt)
         do { _ = try library.add(image, manifest: manifest("Five")); preconditionFailure("Corrupt index overwritten") }

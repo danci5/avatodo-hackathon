@@ -14,6 +14,9 @@ import Foundation
     private var foregroundTask: Task<Void, Never>?
     private var foregroundAttempts = 0
     private var foregroundCompleted = false
+    private var replyAudioTask: Task<Void, Never>?
+    private var replyAudioRun: UUID?
+    var replyAudioFinished: (@MainActor (UUID, Bool) -> Void)?
 
     override init() {
         super.init(); session?.delegate = self; session?.activate()
@@ -29,6 +32,34 @@ import Foundation
         }
     }
     func sendState(_ state: CompanionViewState) { send(state, type: "state") }
+
+    func transferReplyAudio(_ data: Data, manifest: ReplyAudioManifest) {
+        cancelReplyAudio()
+        guard data.count == manifest.totalBytes, data.count <= ReplyAudioManifest.maximumBytes else {
+            replyAudioFinished?(manifest.requestID, false); return
+        }
+        let run = manifest.id; replyAudioRun = run
+        replyAudioTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if replyAudioRun == run { replyAudioTask = nil } }
+            do {
+                let count = (data.count + ReplyAudioChunk.payloadBytes - 1) / ReplyAudioChunk.payloadBytes
+                let started = ProcessInfo.processInfo.systemUptime
+                for index in 0..<count {
+                    try Task.checkCancellation()
+                    guard replyAudioRun == run, ProcessInfo.processInfo.systemUptime - started < 12 else { throw ReplyAudioFailure.timedOut }
+                    let offset = index * ReplyAudioChunk.payloadBytes
+                    let chunk = ReplyAudioChunk(manifest: manifest, index: index, count: count,
+                        bytes: data.subdata(in: offset..<min(offset + ReplyAudioChunk.payloadBytes, data.count)))
+                    try await sendAcknowledged(try JSONEncoder().encode(chunk), type: "replyAudioChunk", timeout: 3)
+                }
+                if replyAudioRun == run { replyAudioFinished?(manifest.requestID, true) }
+            } catch {
+                if replyAudioRun == run { replyAudioFinished?(manifest.requestID, false) }
+            }
+        }
+    }
+    func cancelReplyAudio() { replyAudioRun = nil; replyAudioTask?.cancel(); replyAudioTask = nil }
 
     /// Keep the system background transfer, and also send bounded acknowledged
     /// chunks while both apps are reachable. The latter avoids waiting for the
@@ -131,7 +162,7 @@ import Foundation
     }
     private nonisolated static func envelope(_ message: [String: Any]) -> Data? {
         guard let type = message["type"] as? String, let payload = message["payload"] as? Data,
-              payload.count <= (type == "characterChunk" ? 48_000 : 300_000) else { return nil }
+              payload.count <= (["characterChunk", "replyAudioChunk"].contains(type) ? 48_000 : 300_000) else { return nil }
         return try? JSONEncoder().encode(WireEnvelope(type: type, payload: payload))
     }
     nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {

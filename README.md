@@ -32,6 +32,7 @@ The **agent and note storage run on your iPhone**. Reasoning and image generatio
 - **⌚ Pick it up on your wrist.** Use the paired Apple Watch to talk to the same companion and reach the agent on your iPhone.
 - **🦁 Make it yours.** Keep the included lion, or describe a companion for Meta Muse Image to create. The same character appears on both devices.
 - **📱 Keep your notes local.** Notes and edit/Undo receipts are saved on iPhone. Conversation stays in memory, with a five-minute idle timeout and a **Start fresh** action.
+- **☁️ Optional Drive copies.** Connect your own Google account to upload Markdown copies into an Avatodo folder. Local edits update the copies; Drive edits are not imported. See [setup and limits](docs/google-drive.md).
 
 ### A little less tapping
 
@@ -51,7 +52,7 @@ Open a note and choose **Update this note** to keep the conversation focused on 
 
 The lion is ready from the first launch. For a different companion, describe what you have in mind: **Muse Image creates the artwork**, and Avatodo prepares it locally and sends the same character to your Watch.
 
-Gentle local animation responds to listening, thinking, speaking and saved changes. Your companion's motion works from its artwork; it does not need a new model request for every movement.
+Local animation responds to listening, thinking, speaking and saved changes. New companions get artwork and a reference-based animation sheet, prepared into a cached frame sequence. Tap the companion to dance; preview or regenerate a custom companion's animations in Your companion. Playback needs no new model request. Generated pose quality can vary, and failed preparation keeps the base artwork usable.
 
 ## How it works
 
@@ -59,7 +60,7 @@ Gentle local animation responds to listening, thinking, speaking and saved chang
 
 | On your devices | Through Meta |
 | --- | --- |
-| Agent orchestration, validated note actions and local storage on iPhone | Language reasoning and tool selection with `muse-spark-1.3` |
+| Agent orchestration, validated note actions and local storage on iPhone | Language reasoning and tool selection with `muse-spark-1.3` (default) or `muse-wonder-1.0` |
 | Paired Watch interface, local artwork preparation and animation | Custom companion artwork with `muse-image-1.0` |
 | Your API key in iPhone Keychain; never sent to Watch | Direct requests using your own provider access |
 
@@ -69,7 +70,7 @@ See the [architecture](docs/architecture.md) and [local task engine](docs/local-
 
 ## Get started
 
-You'll need a **Mac with Xcode 27**, the iOS/watchOS SDKs, and your own Meta access to `muse-spark-1.3` and `muse-image-1.0`. Deployment targets are **iOS 26** and **watchOS 26**. Running on hardware also requires compatible paired devices and Apple signing.
+You'll need a **Mac with Xcode 27**, the iOS/watchOS SDKs, and your own Meta access to `muse-spark-1.3` (or optional `muse-wonder-1.0`) and `muse-image-1.0`. Deployment targets are **iOS 26** and **watchOS 26**. Running on hardware also requires compatible paired devices and Apple signing.
 
 ```sh
 git clone https://github.com/danci5/avatodo-hackathon.git
@@ -99,6 +100,9 @@ The [release evidence](docs/release-evidence.md) records build-specific results 
 bash scripts/test.sh
 zsh scripts/check-audio-relay.sh
 zsh scripts/check-character-transfer.sh
+zsh scripts/check-character-animation.sh
+zsh scripts/check-companion-motion.sh
+zsh scripts/check-reply-audio.sh
 zsh scripts/check-meta-consent.sh
 ```
 

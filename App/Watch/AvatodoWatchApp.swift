@@ -7,14 +7,19 @@ import SwiftUI
 struct WatchCompanion: View {
     @Bindable var model: WatchModel
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var typing = false
     @State private var message = ""
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 VStack(spacing: 0) {
-                    CompanionArtwork(data: model.characterData, phase: model.state.phase,
-                        size: 90, celebrationID: model.state.undoReceiptID)
+                    Button { model.dance() } label: {
+                        CompanionArtwork(data: model.characterData, phase: model.state.phase,
+                            size: 90, celebrationID: model.state.undoReceiptID, animationLayout: model.characterManifest?.animationLayout,
+                            reaction: model.state.reaction, reactionID: model.state.reactionID)
+                    }.buttonStyle(.plain).disabled(!model.state.phase.isIdle || reduceMotion)
+                        .accessibilityLabel("Make your companion dance")
                         .frame(maxWidth: .infinity)
                     Text(model.state.caption).font(.footnote).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).lineLimit(2).frame(height: 28)

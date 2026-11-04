@@ -1,5 +1,6 @@
 import SwiftUI
 import AvatodoCore
+import GoogleSignInSwift
 @preconcurrency import AVFoundation
 
 struct PhoneRoot: View {
@@ -32,8 +33,13 @@ struct PhoneRoot: View {
             #if DEBUG && targetEnvironment(simulator)
             do { try DevelopmentBootstrap.importKeyIfProvided(); model.refreshKey() }
             catch { model.alert = error.localizedDescription }
+            await DevelopmentAudioProbe.runIfRequested()
             #endif
+            await model.refreshNotes()
+            await model.drive.restore(notes: model.notes)
+            model.drive.changed(model.notes)
         }
+        .onOpenURL { model.drive.handle($0) }
         .sheet(isPresented: $settings) { SettingsScreen(model: model) }
         .sheet(isPresented: $character) { CharacterScreen(model: model) }
         .alert("Avatodo", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
@@ -43,7 +49,7 @@ struct PhoneRoot: View {
             if let error = model.setupError { ContentUnavailableView("Notes unavailable", systemImage: "externaldrive.badge.exclamationmark", description: Text(error)).background(.background) }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.refreshVoices() }
+            if phase == .active { model.refreshVoices(); model.drive.changed(model.notes) }
             else { model.stopVoicePreview() }
         }
         .onReceive(NotificationCenter.default.publisher(for: AVSpeechSynthesizer.availableVoicesDidChangeNotification)
@@ -61,9 +67,13 @@ struct PhoneCompanion: View {
         GeometryReader { geometry in
             VStack(spacing: 18) {
                 Spacer(minLength: 6)
-                CompanionArtwork(data: model.characterData, phase: model.state.phase,
+                Button { model.dance() } label: {
+                    CompanionArtwork(data: model.characterData, phase: model.state.phase,
                     size: min(geometry.size.width * 0.7, geometry.size.height * 0.40),
-                    celebrationID: model.state.undoReceiptID)
+                    celebrationID: model.state.undoReceiptID, animationLayout: model.characterManifest?.animationLayout,
+                    reaction: model.state.reaction, reactionID: model.state.reactionID)
+                }.buttonStyle(.plain).disabled(!model.state.phase.isIdle || reduceMotion)
+                    .accessibilityLabel("Make your companion dance")
                     .frame(maxWidth: .infinity)
                 Text(model.state.caption).font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center).contentTransition(.opacity)
@@ -131,7 +141,7 @@ struct NotesScreen: View {
         .navigationTitle("Notes")
         .navigationDestination(for: UUID.self) { id in NoteScreen(model: model, id: id) }
         .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("New note", systemImage: "square.and.pencil") { creating = true } } }
-        .sheet(isPresented: $creating) { NoteEditor(note: nil) { kind, title, body in
+        .sheet(isPresented: $creating) { NewNoteComposer { kind, title, body in
             Task { await model.mutation(.create(id: UUID(), kind: kind, title: title, body: body, items: [])) }
         }}
     }
@@ -141,27 +151,49 @@ struct NoteScreen: View {
     @Bindable var model: PhoneModel
     let id: UUID
     @Environment(\.dismiss) private var dismiss
-    @State private var updating = false
-    @State private var editing = false
-    @State private var newItem = ""
     var body: some View {
         Group {
-            if let note = model.note(id) {
+            if let note = model.note(id), let editor = model.noteEditor(for: note) {
+                InlineNoteContent(model: model, note: note, editor: editor).id(id)
+            } else { ContentUnavailableView("Note removed", systemImage: "note.text").onAppear { dismiss() } }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct InlineNoteContent: View {
+    @Bindable var model: PhoneModel
+    let note: Note
+    @Bindable var editor: NoteTextEditingSession
+    @Environment(\.scenePhase) private var scenePhase
+    @FocusState private var focusedField: Field?
+    @State private var updating = false
+    @State private var newItem = ""
+    private enum Field: Hashable { case title, body }
+    private var id: UUID { note.id }
+    var body: some View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        Text(note.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+                        TextField("Title", text: Binding(get: { editor.title }, set: { editor.setTitle($0) }), axis: .vertical)
+                            .font(.largeTitle.bold()).textFieldStyle(.plain)
+                            .focused($focusedField, equals: .title)
+                            .accessibilityLabel("Note title")
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if note.kind == .task {
                             Button {
-                                Task { await model.mutation(.setTaskComplete(id: id, revision: note.revision, isComplete: !note.isComplete)) }
+                                perform { .setTaskComplete(id: $0.id, revision: $0.revision, isComplete: !$0.isComplete) }
                             } label: { Label(note.isComplete ? "Completed" : "Mark complete", systemImage: note.isComplete ? "checkmark.circle.fill" : "circle") }
                         }
-                        if !note.body.isEmpty { Text(note.body).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+                        TextField("Note", text: Binding(get: { editor.body }, set: { editor.setBody($0) }), axis: .vertical)
+                            .font(.body).textFieldStyle(.plain).lineLimit(1...)
+                            .focused($focusedField, equals: .body)
+                            .accessibilityLabel("Note text")
+                            .frame(maxWidth: .infinity, minHeight: note.kind == .checklist ? 28 : 120, alignment: .topLeading)
                         if note.kind == .checklist {
                             VStack(spacing: 0) {
                                 ForEach(note.items) { item in
                                     Button {
-                                        Task { await model.mutation(.setItemsComplete(id: id, revision: note.revision, itemIDs: [item.id], isComplete: !item.isComplete)) }
+                                        perform { fresh in .setItemsComplete(id: fresh.id, revision: fresh.revision, itemIDs: [item.id], isComplete: !item.isComplete) }
                                     } label: {
                                         HStack(alignment: .top, spacing: 12) {
                                             Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle").foregroundStyle(item.isComplete ? Color.blue : .secondary)
@@ -172,42 +204,71 @@ struct NoteScreen: View {
                                     Divider()
                                 }
                                 HStack {
-                                    TextField("Add item", text: $newItem).onSubmit { addItem(note) }
-                                    Button("Add", systemImage: "plus") { addItem(note) }.labelStyle(.iconOnly).disabled(newItem.trimmingCharacters(in: .whitespaces).isEmpty)
+                                    TextField("Add item", text: $newItem).onSubmit { addItem() }
+                                    Button("Add", systemImage: "plus") { addItem() }.labelStyle(.iconOnly).disabled(newItem.trimmingCharacters(in: .whitespaces).isEmpty)
                                 }.padding(.vertical, 14)
                             }
                         }
                         if let receipt = model.undoID(for: id) {
-                            Button("Undo last change") { model.undo(receiptID: receipt) }.font(.subheadline)
+                            Button("Undo last change") {
+                                focusedField = nil
+                                Task { if await editor.flush() { model.undo(receiptID: model.undoID(for: id) ?? receipt) } }
+                            }.font(.subheadline)
+                        }
+                        if let problem = editor.problem {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(problem).font(.footnote).foregroundStyle(.secondary)
+                                HStack(spacing: 24) {
+                                    Button("Retry save") { Task { await editor.flush() } }
+                                    if editor.hasConflict {
+                                        Button("Use saved version") { focusedField = nil; Task { await editor.useSavedVersion() } }
+                                    }
+                                }.font(.subheadline)
+                            }
                         }
                     }.padding(22)
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .safeAreaInset(edge: .bottom) {
-                    Button("Update this note") { updating = true }
+                    Button("Update this note") {
+                        focusedField = nil
+                        Task { if await editor.flush() { updating = true } }
+                    }
                         .buttonStyle(.glassProminent).buttonBorderShape(.capsule).controlSize(.large)
                         .frame(maxWidth: .infinity).padding(.horizontal, 22).padding(.vertical, 12)
                         .disabled(!model.state.phase.isIdle)
                 }
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) { Button("Edit", systemImage: "pencil") { editing = true } }
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { focusedField = nil; Task { await editor.flush() } }
+                    }
                 }
-                .sheet(isPresented: $editing) { NoteEditor(note: note) { _, title, body in
-                    Task { await model.mutation(.edit(id: id, revision: note.revision, title: title, body: body)) }
-                }}
                 .sheet(isPresented: $updating, onDismiss: { if model.canControl && !model.state.phase.isIdle { model.cancel() } }) {
                     NoteConversationPanel(model: model, id: id)
                         .presentationDetents([.height(300), .medium, .large])
                         .presentationDragIndicator(.visible)
                         .presentationBackgroundInteraction(.enabled(upThrough: .height(300)))
                 }
-            } else { ContentUnavailableView("Note removed", systemImage: "note.text").onAppear { dismiss() } }
-        }
-        .navigationBarTitleDisplayMode(.inline)
+                .onChange(of: focusedField) { _, value in if value == nil { Task { await editor.flush() } } }
+                .onChange(of: scenePhase) { _, value in if value != .active { Task { await editor.flush() } } }
+                .onDisappear { Task { await editor.flush() } }
     }
-    private func addItem(_ note: Note) {
+    private func perform(_ action: @escaping @MainActor (Note) -> TaskAction) {
+        focusedField = nil
+        Task {
+            guard await editor.flush(), let fresh = model.note(id) else { return }
+            await model.mutation(action(fresh))
+        }
+    }
+    private func addItem() {
         let text = newItem.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }; newItem = ""
-        Task { await model.mutation(.addItems(id: id, revision: note.revision, items: [ChecklistItem(text: text)])) }
+        guard !text.isEmpty else { return }
+        Task {
+            guard await editor.flush(), let fresh = model.note(id) else { return }
+            let saved = await model.mutation(.addItems(id: fresh.id, revision: fresh.revision, items: [ChecklistItem(text: text)]))
+            if saved, newItem.trimmingCharacters(in: .whitespacesAndNewlines) == text { newItem = "" }
+        }
     }
 }
 
@@ -219,7 +280,8 @@ struct NoteConversationPanel: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack(spacing: 10) {
-                CompanionArtwork(data: model.characterData, phase: model.state.phase, size: 48)
+                CompanionArtwork(data: model.characterData, phase: model.state.phase, size: 48,
+                    animationLayout: model.characterManifest?.animationLayout, reaction: model.state.reaction, reactionID: model.state.reactionID)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(model.state.caption).font(.subheadline.weight(.semibold))
                     Text(model.note(id)?.title ?? "Note").font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -257,8 +319,7 @@ struct MessageComposer: View {
         }.presentationDetents([.medium, .large])
     }
 }
-struct NoteEditor: View {
-    let note: Note?
+struct NewNoteComposer: View {
     let save: (NoteKind, String, String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
@@ -267,15 +328,15 @@ struct NoteEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                if note == nil { Picker("Kind", selection: $kind) { Text("Note").tag(NoteKind.note); Text("Task").tag(NoteKind.task); Text("Checklist").tag(NoteKind.checklist) } }
+                Picker("Kind", selection: $kind) { Text("Note").tag(NoteKind.note); Text("Task").tag(NoteKind.task); Text("Checklist").tag(NoteKind.checklist) }
                 TextField("Title", text: $title, axis: .vertical)
                 TextEditor(text: $text).frame(minHeight: 200).accessibilityLabel("Note text")
-            }.navigationTitle(note == nil ? "New note" : "Edit note").navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle("New note").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button("Save") { save(kind, title, text); dismiss() }.disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
                 }
-        }.onAppear { title = note?.title ?? ""; text = note?.body ?? ""; kind = note?.kind ?? .note }
+        }
     }
 }
 struct SettingsScreen: View {
@@ -323,7 +384,7 @@ struct SettingsScreen: View {
                 }
                 Section {
                     Text("The Meta Model API requires users to be aged 18 or older. By allowing Meta requests, you confirm that you meet this requirement.")
-                    Text("Meta receives your companion’s name, messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
+                    Text("Meta receives your companion’s name, messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image. Creating animation poses also sends the companion artwork to Muse Image.")
                     Text("Watch audio goes to your paired iPhone. Apple handles speech recognition, using its speech service when on-device recognition isn’t supported. Avatodo sends text, not raw microphone audio, to Meta.")
                         .font(.footnote).foregroundStyle(.secondary)
                     if model.metaDataSharingAllowed {
@@ -355,25 +416,59 @@ struct SettingsScreen: View {
                             }
                         }
                     }.pickerStyle(.navigationLink)
+                    Picker("Watch reply voice", selection: $model.watchVoiceChoice) {
+                        Text("Use iPhone voice").tag("iphone")
+                        Text("Automatic on Watch").tag("watch-auto")
+                        if model.watchVoiceChoice.hasPrefix("watch:"),
+                           !model.availableWatchVoices.contains(where: { "watch:" + $0.id == model.watchVoiceChoice }) {
+                            Text("Unavailable on Watch, using Automatic").tag(model.watchVoiceChoice)
+                        }
+                        Section("Available on your Watch") {
+                            ForEach(model.availableWatchVoices) { Text($0.label).tag("watch:" + $0.id) }
+                        }
+                    }.pickerStyle(.navigationLink)
                     Button(model.previewingVoice ? "Stop preview" : "Preview voice") {
                         if model.previewingVoice { model.stopVoicePreview() }
                         else { model.previewVoice() }
                     }.disabled(!model.previewingVoice && !model.canPreviewVoice)
                     if let message = model.voicePreviewMessage { Text(message).font(.footnote) }
                 } header: { Text("Voice") } footer: {
-                    Text("Automatic chooses a high-quality available voice for your language. Siri voices aren’t available to Avatodo. Enhanced and Premium voices must already be installed. Voice availability may differ on Apple Watch; it uses a matching installed voice when your choice isn’t available there.")
+                    Text("Automatic chooses a high-quality available voice for your language. Siri voices aren’t available to Avatodo. Download Enhanced or Premium voices in the device’s Accessibility settings. Use iPhone voice generates a short audio reply on this iPhone and sends it to Watch, so its Premium voice pack can stay on iPhone. Delayed or unavailable audio falls back to local Watch speech. Open Avatodo on Watch to refresh its available voices.")
+                }
+                Section {
+                    Text("Upload Markdown copies of your notes to an Avatodo folder in your personal Google Drive. Connect Muse to your Drive separately to use those copies.")
+                    if model.drive.connected {
+                        if let email = model.drive.accountEmail { Label(email, systemImage: "checkmark.circle").privacySensitive() }
+                        Button(model.drive.uploading ? "Uploading…" : "Upload now") { model.drive.changed(model.notes) }
+                            .disabled(model.drive.uploading)
+                        if let url = model.drive.folderURL { Link("Open Avatodo folder", destination: url) }
+                        Button("Disconnect Google Drive", role: .destructive) { model.drive.disconnect() }
+                    } else {
+                        GoogleSignInButton { Task { await model.drive.connect(notes: model.notes); model.drive.changed(model.notes) } }
+                            .disabled(model.drive.connecting || !model.drive.configured)
+                        if model.drive.connecting { ProgressView("Connecting…") }
+                    }
+                    if let message = model.drive.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                } header: { Text("Google Drive") } footer: {
+                    Text("Optional. Notes go directly from this iPhone to your Google account. New local changes update the copies while Avatodo can run. Drive edits aren’t imported. Deleting a local note or disconnecting doesn’t delete its Drive copy. Conversation and edit receipts aren’t uploaded. Google manages sign-in securely; no Avatodo server is involved.")
                 }
                 Section("Conversation") {
                     Button("Start fresh") { model.startFresh(); dismiss() }.disabled(!model.state.phase.isIdle)
                     Text("Conversation stays in memory and clears after five idle minutes. Only notes and their edit receipts are saved.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("About") {
-                    LabeledContent("Reasoning", value: "Muse Spark")
+                Section {
+                    Picker("Reasoning", selection: Binding(get: { model.reasoningModel }, set: model.selectReasoningModel)) {
+                        ForEach(MetaReasoningModel.allCases, id: \.self) { choice in
+                            Text(choice.title).tag(choice)
+                        }
+                    }.pickerStyle(.navigationLink).disabled(!model.canChangeReasoningModel)
                     LabeledContent("Artwork", value: "Muse Image")
                     Text("Speech uses Apple recognition on this iPhone, on device when available. Some languages may use Apple’s speech service. Watch audio is relayed to this iPhone.").font(.footnote).foregroundStyle(.secondary)
                     Link("Privacy policy", destination: URL(string: "https://avatodo.com/privacy.html")!)
                     Link("Source code", destination: URL(string: "https://github.com/danci5/avatodo-hackathon")!)
+                } header: { Text("About") } footer: {
+                    Text("Reasoning applies to phone and Watch conversations. Switch models between replies; your current conversation and saved notes stay available. Model access and usage pricing depend on your Meta account.")
                 }
             }.navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
                 .onAppear { model.refreshVoices() }
@@ -388,20 +483,33 @@ struct SettingsScreen: View {
 struct CharacterScreen: View {
     @Bindable var model: PhoneModel
     @Environment(\.dismiss) private var dismiss
+    @State private var previewingAnimations = false
+    @State private var previewPhase: CompanionPhase = .ready
+    @State private var previewReaction: CompanionReaction?
+    @State private var previewReactionID: UUID?
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     VStack(spacing: 8) {
-                        CompanionArtwork(data: model.characterData, phase: .ready, size: 160)
+                        CompanionArtwork(data: model.characterData, phase: previewPhase, size: 160,
+                            animationLayout: model.characterManifest?.animationLayout, reaction: previewReaction, reactionID: previewReactionID)
                         Text(model.state.characterName).font(.headline)
                     }.frame(maxWidth: .infinity)
+                    if model.characterManifest == nil || model.characterManifest?.animationLayout != nil {
+                        Button(previewingAnimations ? "Stop animation preview" : "Preview animations") { previewingAnimations.toggle() }
+                    }
+                    if model.characterManifest != nil {
+                        Button(model.characterManifest?.animationLayout == nil ? "Animate this companion" : "Regenerate animations") { Task { await model.animateSelectedCharacter() } }
+                            .disabled(!model.canChangeCharacter || !model.state.hasModelKey || !model.metaDataSharingAllowed)
+                    }
                 }
                 Section {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         companionChoice(id: nil, name: CharacterDefaults.name, image: nil)
                         ForEach(model.characterGallery) { character in
-                            companionChoice(id: character.id, name: character.manifest.name, image: character.image)
+                            companionChoice(id: character.id, name: character.manifest.name, image: character.image,
+                                            animation: character.manifest.animationLayout)
                         }
                     }.padding(.vertical, 4)
                     if !model.characterGalleryAvailable {
@@ -419,16 +527,41 @@ struct CharacterScreen: View {
                         .disabled(!model.canChangeCharacter || !model.state.hasModelKey || model.characterDraftDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     if !model.metaDataSharingAllowed { Text("Allow Meta data sharing in Settings before creating a companion.").font(.footnote).foregroundStyle(.secondary) }
                     if model.generating { HStack { ProgressView(); Text(model.generationStage).font(.subheadline) } }
-                } header: { Text("Create your own") } footer: { Text("Muse creates the artwork. Avatodo prepares it and adds gentle native animation locally, then sends the same companion to your Watch. Generation uses your Meta key.") }
+                } header: { Text("Create your own") } footer: { Text("Muse Image creates the artwork and expression poses. Avatodo prepares the animations locally and sends the same companion to your Watch. Creation uses two image requests with your Meta key; playback needs no further model requests.") }
             }.navigationTitle("Your companion").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+        .task(id: previewingAnimations) {
+            guard previewingAnimations else {
+                previewPhase = .ready; previewReaction = nil; previewReactionID = nil
+                return
+            }
+            for phase in [CompanionPhase.ready, .listening, .thinking, .speaking, .confirmed] {
+                guard !Task.isCancelled else { return }
+                previewPhase = phase
+                do { try await Task.sleep(for: .seconds(phase == .confirmed ? 3 : phase == .speaking ? 2.5 : 1.5)) }
+                catch { return }
+            }
+            previewPhase = .ready
+            for reaction in [CompanionReaction.dance, .laugh] {
+                guard !Task.isCancelled else { return }
+                previewReaction = reaction; previewReactionID = UUID()
+                do { try await Task.sleep(for: .seconds(reaction == .dance ? 3 : 2)) } catch { return }
+            }
+            previewReaction = nil; previewReactionID = nil
+            previewPhase = .ready; previewingAnimations = false
+        }
+        .onChange(of: model.state.characterID) { _, _ in
+            previewingAnimations = false; previewPhase = .ready
+            previewReaction = nil; previewReactionID = nil
+        }
+        .onDisappear { previewingAnimations = false; previewPhase = .ready; previewReaction = nil; previewReactionID = nil }
     }
-    private func companionChoice(id: UUID?, name: String, image: Data?) -> some View {
+    private func companionChoice(id: UUID?, name: String, image: Data?, animation: CharacterAnimationLayout? = nil) -> some View {
         let selected = model.state.characterID == id
         return Button { model.selectCharacter(id) } label: {
             VStack(spacing: 6) {
-                CompanionArtwork(data: image, phase: .ready, size: 74)
+                CompanionArtwork(data: image, phase: .ready, size: 74, animationLayout: animation, motionEnabled: false)
                 HStack(spacing: 4) {
                     Text(name.isEmpty ? CharacterDefaults.name : name).font(.subheadline).lineLimit(2)
                     if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
