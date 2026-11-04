@@ -14,7 +14,7 @@ Exact physical-device behavior is still being verified. Simulator builds do not 
 
 ## Current TestFlight status, 5 November
 
-Build **0.1.0 (9)** uploaded successfully at 00:25:35 CET with optional Drive Markdown/plain-text formats, corrected voice-preview order and the Talk/Done startup fix. Apple processing and internal availability are not yet verified because App Store Connect sign-in is stalled. Build **0.1.0 (8)** is the last verified processed internal build, with a 90-day window and saved instructions. External review/public installation remains pending. Later owner reports confirm Watch speaker replies and a real personal Drive Markdown upload; full physical acceptance of build 9, TXT preview and Muse access are still pending.
+Build **0.1.0 (9)** uploaded successfully at 00:25:35 CET with optional Drive Markdown/plain-text formats, corrected voice-preview order and the Talk/Done startup fix. App Store Connect confirms **Ready to Submit**, a 90-day window, assignment to Avatodo Internal's one invited owner, and saved/reloaded instructions. Update through TestFlight to build **0.1.0 (9)**. External review/public installation remains pending. Later owner reports confirm Watch speaker replies and a real personal Drive Markdown upload; full physical acceptance of build 9, TXT preview and Muse access are still pending.
 
 ## Historical build-5 TestFlight checkpoint
 
