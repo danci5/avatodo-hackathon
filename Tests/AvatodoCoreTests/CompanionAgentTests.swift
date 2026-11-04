@@ -32,6 +32,37 @@ private func create(_ title: String = "Grocery run") -> MutationRequest {
     MutationRequest(action: .create(id: UUID(), kind: .checklist, title: title, body: "", items: [ChecklistItem(text: "Milk")]))
 }
 
+@Test func currentCompanionNameIsSentEachTurnAndOverridesEarlierIdentity() async throws {
+    let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
+    let model = ScriptedLanguageModel([response("I'm Nikola."), response("I'm Ava.")])
+    let agent = CompanionAgent(store: store, model: model)
+    _ = try await agent.respond(to: "What is your name?", key: "fixture", companionName: "  Nikola  ")
+    _ = try await agent.respond(to: "And now?", key: "fixture", companionName: "Ava")
+    let calls = await model.invocations
+    let context1 = calls[0][1]["content"].string ?? ""
+    let context2 = calls[1][1]["content"].string ?? ""
+    #expect(context1.contains("Nikola"))
+    #expect(context2.contains("Ava"))
+    #expect(!context2.contains("Nikola"))
+    #expect(calls[1].contains { $0["content"].string == "I'm Nikola." })
+    #expect(calls[1][0]["content"].string?.contains("even if an earlier turn mentioned a different companion") == true)
+    #expect(await store.notes().isEmpty)
+}
+
+@Test func identityIsBoundedAndPartOfRetryIdentity() async throws {
+    let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
+    let model = ScriptedLanguageModel([response("Hello")])
+    let agent = CompanionAgent(store: store, model: model)
+    let id = UUID()
+    _ = try await agent.respond(to: "Hello", requestID: id, key: "fixture", companionName: "  ")
+    await #expect(throws: TaskStoreError.reusedRequestID) {
+        try await agent.respond(to: "Hello", requestID: id, key: "fixture", companionName: "Nikola")
+    }
+    let calls = await model.invocations
+    #expect(calls[0][1]["content"].string?.contains("Ava") == true)
+    #expect(await model.count == 1)
+}
+
 @Test func normalRepliesNeverCreateNotesAndFreshClearsContext() async throws {
     let (store, folder) = try testStore(); defer { try? FileManager.default.removeItem(at: folder) }
     let model = ScriptedLanguageModel((0..<8).map { _ in response("Doing well. How are you?") })

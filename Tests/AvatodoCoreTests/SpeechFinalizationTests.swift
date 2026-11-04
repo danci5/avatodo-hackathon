@@ -1,6 +1,32 @@
 import Testing
 @testable import AvatodoCore
 
+@Test func emptyRecordingQuietlyFinishesWithoutARequest() throws {
+    #expect(try SpeechFinalization().finalizedTextOrEmpty() == nil)
+    var speech = SpeechFinalization()
+    try speech.submitAudio(sampleCount: 1600)
+    #expect(try speech.finalizedTextOrEmpty() == nil)
+    speech.receive(text: " \n ", isFinal: true, issue: nil)
+    #expect(try speech.finalizedTextOrEmpty() == nil)
+    speech.receive(text: nil, isFinal: false,
+        issue: SpeechServiceIssue(domain: "kAFAssistantErrorDomain", code: 1110))
+    #expect(try speech.finalizedTextOrEmpty() == nil)
+}
+
+@Test func emptyRecordingDoesNotHideRealServiceFailuresOrPartialWords() throws {
+    for code in [1101, 1110] {
+        var speech = SpeechFinalization()
+        try speech.submitAudio(sampleCount: 1600)
+        let issue = SpeechServiceIssue(domain: "kAFAssistantErrorDomain", code: code)
+        speech.receive(text: code == 1110 ? "Add eggs" : nil, isFinal: true, issue: issue)
+        #expect(throws: SpeechRecognitionFailure.service(issue)) { try speech.finalizedTextOrEmpty() }
+    }
+    var partial = SpeechFinalization()
+    try partial.submitAudio(sampleCount: 1600)
+    partial.receive(text: "Add eggs", isFinal: false, issue: nil)
+    #expect(throws: SpeechRecognitionFailure.finalizationTimedOut) { try partial.finalizedTextOrEmpty() }
+}
+
 @Test func partialSpeechNeverAuthorizesAnAgentTurn() throws {
     var speech = SpeechFinalization()
     try speech.submitAudio(sampleCount: 1600)

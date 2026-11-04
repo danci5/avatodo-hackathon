@@ -10,6 +10,7 @@ import AvatodoCore
     private var generation = UUID()
     private var result = SpeechFinalization()
     private(set) var onDevice = false
+    var hasRecognizedWords: Bool { result.hasRecognizedWords }
 
     func start(partial: @escaping @MainActor (String) -> Void,
                failed: @escaping @MainActor (SpeechRecognitionFailure) -> Void) async throws {
@@ -65,12 +66,12 @@ import AvatodoCore
         try result.submitAudio(sampleCount: Int(buffer.frameLength))
         request.append(buffer)
     }
-    func finish() async throws -> String {
+    func finish() async throws -> String? {
         let token = generation
         // Cleanup belongs to this turn only; cancellation must not tear down a new one.
         defer { if generation == token { cancel() } }
         guard let request, let recognition else { throw SpeechRecognitionFailure.unavailable }
-        guard result.submittedSamples > 0 else { throw SpeechRecognitionFailure.noAudio }
+        guard result.submittedSamples > 0 else { return nil }
         request.endAudio()
         recognition.finish()
         for _ in 0..<100 {
@@ -81,7 +82,7 @@ import AvatodoCore
         }
         try Task.checkCancellation()
         guard generation == token else { throw CancellationError() }
-        return try result.finalizedText()
+        return try result.finalizedTextOrEmpty()
     }
     func cancel() {
         generation = UUID(); recognition?.cancel(); recognition = nil

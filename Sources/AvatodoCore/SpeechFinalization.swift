@@ -18,6 +18,15 @@ public enum SpeechRecognitionFailure: Error, Equatable, Sendable, LocalizedError
     case unavailable, noAudio, noWords, finalizationTimedOut, audioAfterFinal
     case service(SpeechServiceIssue)
 
+    /// Apple's no-speech outcome is an empty turn, not an actionable transcript.
+    public var isEmptyInput: Bool {
+        switch self {
+        case .noAudio, .noWords: true
+        case let .service(issue): issue.domain == "kAFAssistantErrorDomain" && issue.code == 1110
+        default: false
+        }
+    }
+
     public var errorDescription: String? {
         switch self {
         case .unavailable:
@@ -43,6 +52,7 @@ public struct SpeechFinalization: Sendable {
     public private(set) var isFinal = false
     public private(set) var failure: SpeechRecognitionFailure?
     public var resolved: Bool { isFinal || failure != nil }
+    public var hasRecognizedWords: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     public init() {}
 
@@ -55,7 +65,10 @@ public struct SpeechFinalization: Sendable {
 
     public mutating func receive(text: String?, isFinal: Bool, issue: SpeechServiceIssue?) {
         // An error wins even when the same callback also contains a final result.
-        if let issue { failure = .service(issue); return }
+        if let issue {
+            if let text { self.text = text }
+            failure = .service(issue); return
+        }
         guard failure == nil, !self.isFinal else { return }
         if let text { self.text = text }
         self.isFinal = isFinal
@@ -68,5 +81,13 @@ public struct SpeechFinalization: Sendable {
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !words.isEmpty else { throw SpeechRecognitionFailure.noWords }
         return words
+    }
+
+    public func finalizedTextOrEmpty() throws -> String? {
+        do { return try finalizedText() }
+        catch let failure as SpeechRecognitionFailure {
+            if !hasRecognizedWords && (failure.isEmptyInput || failure == .finalizationTimedOut) { return nil }
+            throw failure
+        }
     }
 }

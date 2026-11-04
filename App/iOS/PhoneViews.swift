@@ -289,10 +289,21 @@ struct SettingsScreen: View {
                 Section {
                     Label(model.state.hasModelKey ? "Key stored on this iPhone" : "Add your key", systemImage: model.state.hasModelKey ? "checkmark.shield" : "key")
                     SecureField("Meta API key", text: $key).textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive()
-                    Button(model.state.hasModelKey ? "Replace key" : "Save key") {
-                        do { try model.saveKey(key); key = ""; message = "Stored in iPhone Keychain. Connection not checked." } catch { message = error.localizedDescription }
-                    }.disabled(key.isEmpty)
-                    if model.state.hasModelKey { Button("Remove key", role: .destructive) { do { try model.removeKey(); message = "Key removed." } catch { message = error.localizedDescription } } }
+                    HStack(spacing: 24) {
+                        Button {
+                            do { try model.saveKey(key); key = ""; message = "Stored in iPhone Keychain. Connection not checked." } catch { message = error.localizedDescription }
+                        } label: {
+                            Text(model.state.hasModelKey ? "Replace key" : "Save key").frame(minHeight: 44)
+                        }.disabled(key.isEmpty)
+                        if model.state.hasModelKey {
+                            Spacer(minLength: 0)
+                            Button(role: .destructive) {
+                                do { try model.removeKey(); message = "Key removed." } catch { message = error.localizedDescription }
+                            } label: {
+                                Text("Remove key").frame(minHeight: 44)
+                            }
+                        }
+                    }.buttonStyle(.borderless)
                     if let message { Text(message).font(.footnote) }
                     Button {
                         message = nil
@@ -311,8 +322,8 @@ struct SettingsScreen: View {
                     Text("Saving stores your key. Check connection tests your key and lists available models without sending notes or generating content. Try Talk or companion creation to check those features. Requests go directly to Meta; usage charges may apply.")
                 }
                 Section {
-                    Text("Meta AI features are for people aged 18 or older. By allowing Meta requests, you confirm that you meet this requirement.")
-                    Text("Meta receives your messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
+                    Text("The Meta Model API requires users to be aged 18 or older. By allowing Meta requests, you confirm that you meet this requirement.")
+                    Text("Meta receives your companion’s name, messages and transcribed words, recent conversation, a list of note titles and details, and the content of notes the agent reads or updates. Creating a companion sends your description to Muse Image.")
                     Text("Watch audio goes to your paired iPhone. Apple handles speech recognition, using its speech service when on-device recognition isn’t supported. Avatodo sends text, not raw microphone audio, to Meta.")
                         .font(.footnote).foregroundStyle(.secondary)
                     if model.metaDataSharingAllowed {
@@ -377,25 +388,59 @@ struct SettingsScreen: View {
 struct CharacterScreen: View {
     @Bindable var model: PhoneModel
     @Environment(\.dismiss) private var dismiss
-    @State private var name = "Ava"
-    @State private var description = "A little lion with black Wayfarer sunglasses, soft golden fur and a friendly confident smile."
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    CompanionArtwork(data: model.characterData, phase: .ready, size: 160).frame(maxWidth: .infinity)
-                    Button("Use the Avatodo lion") { model.useDefaultCharacter() }.disabled(model.generating)
+                    VStack(spacing: 8) {
+                        CompanionArtwork(data: model.characterData, phase: .ready, size: 160)
+                        Text(model.state.characterName).font(.headline)
+                    }.frame(maxWidth: .infinity)
                 }
                 Section {
-                    TextField("Name", text: $name)
-                    TextField("Describe your companion", text: $description, axis: .vertical).lineLimit(4...8)
-                    Button("Create with Muse Image") { Task { await model.createCharacter(description: description, name: name) } }
-                        .disabled(model.generating || !model.state.hasModelKey || description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        companionChoice(id: nil, name: CharacterDefaults.name, image: nil)
+                        ForEach(model.characterGallery) { character in
+                            companionChoice(id: character.id, name: character.manifest.name, image: character.image)
+                        }
+                    }.padding(.vertical, 4)
+                    if !model.characterGalleryAvailable {
+                        Text("Your saved gallery couldn’t be opened. Its files have been preserved.").font(.footnote).foregroundStyle(.secondary)
+                    }
+                } header: { Text("Your companions") } footer: {
+                    Text("Ava and your three most recent creations stay on this iPhone. A new creation replaces the oldest saved custom companion. Tap a companion to use it on iPhone and Watch.")
+                }
+                Section {
+                    TextField("Name", text: $model.characterDraftName).disabled(model.generating)
+                    TextField("Describe your companion", text: $model.characterDraftDescription, axis: .vertical).lineLimit(3...8).disabled(model.generating)
+                    Button("Create with Muse Image") {
+                        Task { await model.createCharacter(description: model.characterDraftDescription, name: model.characterDraftName) }
+                    }
+                        .disabled(!model.canChangeCharacter || !model.state.hasModelKey || model.characterDraftDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     if !model.metaDataSharingAllowed { Text("Allow Meta data sharing in Settings before creating a companion.").font(.footnote).foregroundStyle(.secondary) }
                     if model.generating { HStack { ProgressView(); Text(model.generationStage).font(.subheadline) } }
                 } header: { Text("Create your own") } footer: { Text("Muse creates the artwork. Avatodo prepares it and adds gentle native animation locally, then sends the same companion to your Watch. Generation uses your Meta key.") }
             }.navigationTitle("Your companion").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+    }
+    private func companionChoice(id: UUID?, name: String, image: Data?) -> some View {
+        let selected = model.state.characterID == id
+        return Button { model.selectCharacter(id) } label: {
+            VStack(spacing: 6) {
+                CompanionArtwork(data: image, phase: .ready, size: 74)
+                HStack(spacing: 4) {
+                    Text(name.isEmpty ? CharacterDefaults.name : name).font(.subheadline).lineLimit(2)
+                    if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
+                }.frame(minHeight: 34)
+            }
+            .padding(8).frame(maxWidth: .infinity)
+            .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: selected ? 2 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain).disabled(!model.canChangeCharacter)
+        .accessibilityLabel(name.isEmpty ? CharacterDefaults.name : name)
+        .accessibilityValue(selected ? "Selected" : "")
     }
 }

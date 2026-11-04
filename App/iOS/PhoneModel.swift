@@ -8,6 +8,20 @@ import AvatodoCore
     var notes: [Note] = []
     var characterData: Data?
     var characterManifest: CharacterManifest?
+    var characterGallery: [StoredCharacter] = []
+    var characterGalleryAvailable = true
+    var characterDraftName = CharacterDefaults.name {
+        didSet {
+            if characterDraftName.count > 40 { characterDraftName = String(characterDraftName.prefix(40)) }
+            UserDefaults.standard.set(characterDraftName, forKey: "characterDraftName")
+        }
+    }
+    var characterDraftDescription = CharacterDefaults.description {
+        didSet {
+            if characterDraftDescription.count > 2_000 { characterDraftDescription = String(characterDraftDescription.prefix(2_000)) }
+            UserDefaults.standard.set(characterDraftDescription, forKey: "characterDraftDescription")
+        }
+    }
     var showUndo = false
     var scopedNoteID: UUID?
     var setupError: String?
@@ -32,6 +46,7 @@ import AvatodoCore
         didSet { UserDefaults.standard.set(speaksReplies, forKey: "speaksReplies") }
     }
     private let consent = MetaDataSharingConsent()
+    private let characterLibrary = CharacterLibrary(folder: CharacterStore.folder)
     private var characterRequest: Task<Data, Error>?
     private var connectionCheckTask: Task<MetaAccessCheck, Error>?
     private var connectionCheckID = UUID()
@@ -64,10 +79,18 @@ import AvatodoCore
 
     init() {
         state.hasDataSharingConsent = consent.isGranted
-        if let saved = CharacterStore.load() {
-            characterData = saved.0; characterManifest = saved.1
-            state.characterID = saved.1.id; state.characterName = saved.1.name
+        do { applyCharacterLibrary(try characterLibrary.load()) }
+        catch {
+            characterGalleryAvailable = false
+            if let saved = CharacterStore.load() {
+                characterData = saved.0; characterManifest = saved.1
+                state.characterID = saved.1.id; state.characterName = saved.1.name.isEmpty ? CharacterDefaults.name : saved.1.name
+            }
+            alert = CharacterLibraryFailure.unreadable.localizedDescription
         }
+        characterDraftName = UserDefaults.standard.string(forKey: "characterDraftName") ?? characterManifest?.name ?? CharacterDefaults.name
+        characterDraftDescription = UserDefaults.standard.string(forKey: "characterDraftDescription")
+            ?? characterManifest?.description ?? (characterManifest == nil ? CharacterDefaults.description : "")
         do {
             let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
                 .appendingPathComponent("Notes", isDirectory: true)
@@ -105,9 +128,10 @@ import AvatodoCore
         let id = UUID(); voicePreviewID = id; previewingVoice = true
         do {
             try voice.speak("Hello! This is how I sound.", preferredID: state.preferredVoiceID,
-                            language: voiceLanguage) { [weak self] in
+                            language: voiceLanguage) { [weak self] outcome in
                 guard let self, voicePreviewID == id else { return }
                 voicePreviewID = nil; previewingVoice = false
+                if outcome.failed { voicePreviewMessage = "Audio couldn’t play. Check the device volume and audio output, or try another installed voice." }
             }
         } catch {
             guard voicePreviewID == id else { return }
@@ -261,7 +285,9 @@ import AvatodoCore
                 } failed: { [weak self] failure in
                     guard let self, self.requestID == id,
                           self.state.phase == .listening || self.state.phase == .thinking else { return }
-                    self.cancel(message: failure.localizedDescription)
+                    if failure.isEmptyInput && !self.recognition.hasRecognizedWords {
+                        self.state.text = ""; self.cancel()
+                    } else { self.cancel(message: failure.localizedDescription) }
                 }
                 try Task.checkCancellation()
                 guard requestID == id else { return }
@@ -302,6 +328,7 @@ import AvatodoCore
         work = Task { [weak self] in await self?.respond(text, id: id); self?.work = nil }
     }
     func finish(packetCount: Int? = nil) {
+        if state.phase == .listening, work != nil { state.text = ""; cancel(); return }
         guard state.phase == .listening, work == nil, let id = requestID else { return }
         captureTimer?.cancel()
         setPhase(.thinking, caption: "Finishing transcription…")
@@ -312,7 +339,7 @@ import AvatodoCore
             }
             do {
                 if watchOrigin {
-                    guard let packetCount, packetCount > 0, packetCount <= 1800 else { throw AudioFailure.incompleteAudio }
+                    guard let packetCount, packetCount >= 0, packetCount <= 1800 else { throw AudioFailure.incompleteAudio }
                     for _ in 0..<20 where nextFrame < packetCount && !audioFailed {
                         try await Task.sleep(for: .milliseconds(100))
                     }
@@ -324,6 +351,9 @@ import AvatodoCore
                 microphone.releaseSession()
                 try Task.checkCancellation()
                 guard requestID == id else { return }
+                guard let text else {
+                    state.text = ""; readyAfterReply(); return
+                }
                 await respond(text, id: id)
             } catch is CancellationError { if requestID == id { finishCancelled() } }
             catch { if requestID == id { fail(error) } }
@@ -336,7 +366,8 @@ import AvatodoCore
             setPhase(.thinking, caption: "Thinking…", text: text)
             _ = await agent.expireIfNeeded()
             await agent.setPresentingReply(true)
-            let outcome = try await agent.respond(to: text, requestID: id, key: key, scopedTo: scopedNoteID)
+            let outcome = try await agent.respond(to: text, requestID: id, key: key, scopedTo: scopedNoteID,
+                                                  companionName: state.characterName)
             await refreshNotes()
             guard consent.isGranted else { throw MetaConsentError.revoked }
             guard requestID == id else { return }
@@ -352,15 +383,18 @@ import AvatodoCore
                 if watchOrigin {
                     // Watch speaks locally; a bounded watchdog prevents a lost playback acknowledgement blocking the session.
                     replyTimer = Task { [weak self] in
-                        try? await Task.sleep(for: .seconds(90))
+                        try? await Task.sleep(for: .seconds(195))
                         guard !Task.isCancelled, self?.requestID == id else { return }
-                        self?.readyAfterReply()
+                        self?.readyAfterReply(audioUnavailable: true)
                     }
                     endBackgroundWork()
                 } else {
                     do { try voice.speak(outcome.reply, preferredID: state.preferredVoiceID,
-                                         language: voiceLanguage) { [weak self] in self?.readyAfterReply() } }
-                    catch { readyAfterReply() }
+                                         language: voiceLanguage) { [weak self] outcome in
+                        guard let self, requestID == id, state.phase == .speaking else { return }
+                        readyAfterReply(audioUnavailable: outcome.failed)
+                    } }
+                    catch { readyAfterReply(audioUnavailable: true) }
                 }
             } else { readyAfterReply() }
         } catch is CancellationError { await refreshNotes(); finishCancelled() }
@@ -371,11 +405,11 @@ import AvatodoCore
         guard canControl, state.phase == .speaking else { return }
         voice.stop(); readyAfterReply()
     }
-    private func readyAfterReply() {
+    private func readyAfterReply(audioUnavailable: Bool = false) {
         replyTimer?.cancel(); state.sessionExpiresAt = Date().addingTimeInterval(300)
         state.undoExpiresAt = showUndo ? Date().addingTimeInterval(5) : nil
         if state.resultIsMutation {
-            setPhase(.confirmed, caption: savedCaption)
+            setPhase(.confirmed, caption: audioUnavailable ? savedCaption + " · audio unavailable" : savedCaption)
             let id = requestID
             confirmationTimer?.cancel()
             confirmationTimer = Task { [weak self] in
@@ -383,7 +417,7 @@ import AvatodoCore
                 guard !Task.isCancelled, let self, requestID == id, state.phase == .confirmed else { return }
                 setPhase(.ready)
             }
-        } else { setPhase(.ready) }
+        } else { setPhase(.ready, caption: audioUnavailable ? "Reply ready · audio unavailable" : nil) }
         Task { await agent?.setPresentingReply(false) }
         endBackgroundWork(); scheduleIdle()
         if showUndo {
@@ -457,34 +491,55 @@ import AvatodoCore
         }
     }
     func createCharacter(description: String, name: String) async {
-        guard !generating, state.phase.isIdle, work == nil else { return }
+        guard canChangeCharacter else { return }
+        let savedDescription = String(description.trimmingCharacters(in: .whitespacesAndNewlines).prefix(2_000))
+        let savedName = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))
+        guard !savedDescription.isEmpty else { return }
         do { try consent.requirePermission() } catch { alert = error.localizedDescription; return }
         generating = true; generationStage = "Creating with Muse Image…"
         defer { generating = false; characterRequest = nil }
         do {
             guard let key = try KeychainStore.load() else { throw MetaError.missingKey }
-            let request = Task { try await MetaClient().generateCharacter(description: description, key: key) }
+            let request = Task { try await MetaClient().generateCharacter(description: savedDescription, key: key) }
             characterRequest = request
             let original = try await request.value
             try consent.requirePermission()
             generationStage = "Preparing your companion…"
             let prepared = try await Task.detached(priority: .userInitiated) { try CharacterStore.prepare(original) }.value
             try consent.requirePermission()
-            let manifest = CharacterManifest(id: UUID(), name: String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40)),
-                sha256: CharacterStore.digest(prepared), generatedAt: Date(), sourceModel: MetaClient.imageModel)
-            try CharacterStore.save(prepared, manifest: manifest)
-            characterData = prepared; characterManifest = manifest
-            state.characterID = manifest.id; state.characterName = manifest.name.isEmpty ? "Avatodo" : manifest.name
+            let manifest = CharacterManifest(id: UUID(), name: savedName.isEmpty ? CharacterDefaults.name : savedName,
+                sha256: CharacterStore.digest(prepared), generatedAt: Date(), sourceModel: MetaClient.imageModel,
+                description: savedDescription)
+            applyCharacterLibrary(try characterLibrary.add(prepared, manifest: manifest))
+            restoreSelectedCharacterDraft()
             publish(); sendCharacter()
         } catch is CancellationError { alert = MetaConsentError.revoked.localizedDescription }
         catch { alert = error.localizedDescription }
     }
     func useDefaultCharacter() {
+        selectCharacter(nil)
+    }
+    var canChangeCharacter: Bool { characterGalleryAvailable && !generating && state.phase.isIdle && work == nil }
+    func selectCharacter(_ id: UUID?) {
+        guard canChangeCharacter else { return }
         do {
-            try CharacterStore.reset(); link.cancelCharacterTransfers()
-            characterData = nil; characterManifest = nil; state.characterID = nil; state.characterName = "Avatodo"; publish()
+            let snapshot = try characterLibrary.select(id)
+            link.cancelCharacterTransfers()
+            applyCharacterLibrary(snapshot); restoreSelectedCharacterDraft()
+            publish(); sendCharacter()
         }
-        catch { alert = error.localizedDescription }
+        catch { alert = CharacterLibraryFailure.invalidArtwork.localizedDescription }
+    }
+    private func applyCharacterLibrary(_ snapshot: CharacterLibrarySnapshot) {
+        characterGallery = snapshot.characters
+        characterData = snapshot.selected?.image; characterManifest = snapshot.selected?.manifest
+        state.characterID = snapshot.selected?.id
+        let selectedName = snapshot.selected?.manifest.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        state.characterName = selectedName.isEmpty ? CharacterDefaults.name : selectedName
+    }
+    private func restoreSelectedCharacterDraft() {
+        characterDraftName = characterManifest?.name ?? CharacterDefaults.name
+        characterDraftDescription = characterManifest?.description ?? (characterManifest == nil ? CharacterDefaults.description : "")
     }
     private func sendCharacter(retryForeground: Bool = false) {
         guard let manifest = characterManifest else { return }
@@ -496,6 +551,12 @@ import AvatodoCore
             receiveFrame(frame); return
         }
         guard envelope.type == "command", let command = try? JSONDecoder().decode(WatchCommand.self, from: envelope.payload) else { return }
+        // A new Watch turn may also acknowledge its previous local playback end.
+        // This survives a lost standalone acknowledgement without replaying work.
+        if command.kind != .playbackEnded, command.kind != .stopSpeaking,
+           let ended = command.endingPlaybackID, watchOrigin, requestID == ended, state.phase == .speaking {
+            readyAfterReply()
+        }
         switch command.kind {
         case .status: publish(); sendCharacter()
         case .character: sendCharacter(retryForeground: true)
@@ -510,7 +571,9 @@ import AvatodoCore
         case .undo: undo(receiptID: command.receiptID)
         case .startFresh: startFresh()
         case .stopSpeaking, .playbackEnded:
-            if watchOrigin && requestID == command.requestID && state.phase == .speaking { readyAfterReply() }
+            if watchOrigin && requestID == command.requestID && state.phase == .speaking {
+                readyAfterReply(audioUnavailable: command.text == "audioUnavailable")
+            }
         }
     }
     private func receiveFrame(_ frame: VoiceFrame) {

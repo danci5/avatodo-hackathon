@@ -15,6 +15,7 @@ import WatchKit
     private var capturing = false
     private var packetCount = 0
     private var spokenRequest: UUID?
+    private var pendingPlaybackEnd: UUID?
     private var awaitingStart = false
     private var awaitingStop = false
     private var awaitingFinish = false
@@ -41,6 +42,7 @@ import WatchKit
         }
         link.deliveryError = { [weak self] in
             guard let self else { return }
+            if state.phase.isIdle, awaitingStop { return }
             if capturing || awaitingStart || awaitingStop {
                 stopCapture(); awaitingStart = false; awaitingStop = false
                 state.phase = .error; state.caption = "Connection interrupted"
@@ -58,9 +60,8 @@ import WatchKit
             stopCapture(); awaitingStart = false; awaitingStop = true
             state.caption = "Stopping…"; command(.cancel); waitForReply(seconds: 15)
         case .speaking:
-            voice.stop(); awaitingStop = true
-            state.phase = .thinking; state.caption = "Finishing…"
-            command(.stopSpeaking); waitForReply(seconds: 15)
+            voice.stop()
+            finishPlayback(id: localRequest, outcome: .finished, command: .stopSpeaking)
         }
     }
     func begin() {
@@ -87,6 +88,11 @@ import WatchKit
     }
     func finish() {
         guard capturing, let id = localRequest else { return }
+        if microphoneTask != nil && packetCount == 0 {
+            stopCapture(); awaitingStart = false; awaitingStop = true
+            state.phase = .thinking; state.caption = "Stopping…"; state.text = ""
+            command(.cancel); waitForReply(seconds: 15); return
+        }
         awaitingFinish = true
         do {
             // Drain while this turn still accepts packets, before sending its final count.
@@ -112,7 +118,8 @@ import WatchKit
         voice.stop(); stopCapture(); state.text = ""; showUndo = false; command(.startFresh)
     }
     private func command(_ kind: WatchCommand.Kind, text: String? = nil, receipt: UUID? = nil, count: Int? = nil) {
-        link.send(WatchCommand(kind: kind, requestID: localRequest ?? UUID(), text: text, receiptID: receipt, packetCount: count), type: "command")
+        link.send(WatchCommand(kind: kind, requestID: localRequest ?? UUID(), text: text, receiptID: receipt,
+                              packetCount: count, endingPlaybackID: pendingPlaybackEnd), type: "command")
     }
     private func received(_ data: Data) {
         guard let envelope = try? JSONDecoder().decode(WireEnvelope.self, from: data) else { return }
@@ -141,7 +148,7 @@ import WatchKit
         if awaitingFinish, incoming.requestID == localRequest, incoming.phase == .listening { return }
         if incoming.requestID == localRequest, incoming.phase != .listening { awaitingFinish = false }
         if incoming.requestID == localRequest || incoming.phase == .error { awaitingStart = false }
-        if incoming.phase.isIdle { awaitingStop = false }
+        if incoming.phase.isIdle { awaitingStop = false; pendingPlaybackEnd = nil }
         state = incoming
         updateTransientDeadlines()
         guard incoming.replyDevice == "watch", incoming.requestID == localRequest else {
@@ -193,13 +200,23 @@ import WatchKit
         if incoming.phase != .listening, capturing { stopCapture() }
         if incoming.phase == .speaking, spokenRequest != incoming.requestID, !incoming.text.isEmpty {
             stopCapture(); spokenRequest = incoming.requestID
+            let id = incoming.requestID
             do { try voice.speak(incoming.text, preferredID: incoming.preferredVoiceID,
-                                 language: incoming.preferredVoiceLanguage) { [weak self] in
+                                 language: incoming.preferredVoiceLanguage) { [weak self] outcome in
                 guard let self else { return }
-                awaitingStop = true; command(.playbackEnded); waitForReply(seconds: 15)
-            }} catch { command(.playbackEnded); waitForReply(seconds: 15) }
+                finishPlayback(id: id, outcome: outcome)
+            }} catch { finishPlayback(id: id, outcome: .unavailable) }
         } else if incoming.phase != .speaking { voice.stop() }
         if incoming.phase.isIdle { timeout?.cancel() }
+    }
+    private func finishPlayback(id: UUID?, outcome: SpeechPlaybackEnd, command kind: WatchCommand.Kind = .playbackEnded) {
+        guard let id, localRequest == id, state.requestID == id, state.phase == .speaking else { return }
+        timeout?.cancel(); awaitingStop = true; pendingPlaybackEnd = id
+        // The text and any saved change remain intact even if the phone cannot
+        // acknowledge immediately. Talk is usable as soon as local playback ends.
+        state.phase = .ready
+        state.caption = outcome.failed ? "Reply ready · audio unavailable" : CompanionPhase.ready.title
+        command(kind, text: outcome.failed ? "audioUnavailable" : nil)
     }
     private func updateTransientDeadlines() {
         undoTimer?.cancel(); expiry?.cancel()

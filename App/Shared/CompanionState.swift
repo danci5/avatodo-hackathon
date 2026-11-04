@@ -39,7 +39,7 @@ struct CompanionViewState: Codable, Sendable, Equatable {
     var preferredVoiceID: String?
     var preferredVoiceLanguage: String?
     var characterID: UUID?
-    var characterName = "Avatodo"
+    var characterName = "Ava"
     var epoch = UUID()
     var sequence = 0
     var sessionExpiresAt: Date?
@@ -56,6 +56,7 @@ struct WatchCommand: Codable, Sendable {
     var text: String?
     var receiptID: UUID?
     var packetCount: Int?
+    var endingPlaybackID: UUID?
 }
 
 /// Wire audio is mono signed Int16 little-endian PCM at 16 kHz, never persisted.
@@ -72,4 +73,5 @@ struct CharacterManifest: Codable, Sendable, Equatable {
     var sha256: String
     var generatedAt: Date
     var sourceModel: String
+    var description: String? = nil
 }

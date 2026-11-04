@@ -79,7 +79,15 @@ Conversation is temporary: six complete recent exchanges in RAM, separate active
 
 The Watch receives the preferred voice identifier and language. It uses that voice if installed locally, otherwise a matching installed voice chosen by quality. iPhone and Watch voice inventories can differ; a phone download does not establish Watch availability. The preference is not stored in Watch UserDefaults.
 
-Simulator checks verified voice options, selection persistence through relaunch, and Preview/Stop/end behavior. The owner has not yet confirmed the selected voice on physical iPhone or Watch.
+Simulator checks verified voice options, selection persistence through relaunch, and Preview/Stop/end behavior. The owner confirmed that a downloaded voice appears and previews on physical iPhone in TestFlight build 5. Watch speaker playback was subsequently reported working with a simpler local fallback voice; the selected iPhone Premium voice has not been confirmed available on Watch.
+
+In build 6, playback has bounded recovery when Apple never starts speech, stops reporting progress or omits its completion callback. An interrupted or unavailable voice leaves the reply text and saved changes intact and returns the main control to Talk. Stopping speech never undoes a committed note change. Watch renders its speech locally using Apple's managed speech session; it does not receive the iPhone's downloaded voice pack. Apple describes Watch voice downloads under [Settings → Accessibility → Live Speech → Voices](https://support.apple.com/guide/watch/type-to-speak-apd86a007717/watchos); availability through the app's speech API still depends on the Watch's installed voices.
+
+## Saved companions
+
+Build 6 keeps Ava plus the three most recent generated companions on this iPhone. The gallery preserves artwork, name and description, and selecting an older companion does not reorder creation history. The selected character is sent to the paired Watch. Creating a fourth custom companion replaces the oldest gallery entry. Character drafts survive dismissing the editor and app relaunch. Older builds saved only the current character's name and no descriptions; migration recovers available cached artwork as “Saved companion” without inventing lost names or prompts.
+
+The current companion's name is included in each Meta agent turn as app context, so changing companions also changes the identity provided to the model. Empty recordings quietly return to Talk without making a model request; partial speech or genuine service failures cannot authorize a note action.
 
 ## Speech and Watch limits
 

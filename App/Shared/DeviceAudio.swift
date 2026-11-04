@@ -112,9 +112,27 @@ import Foundation
 @MainActor final class DeviceVoice: NSObject, AVSpeechSynthesizerDelegate {
     private let synthesizer = AVSpeechSynthesizer()
     private var utteranceID: ObjectIdentifier?
-    private var onEnd: (@MainActor () -> Void)?
+    private var onEnd: (@MainActor (SpeechPlaybackEnd) -> Void)?
     private var ownsSession = false
-    override init() { super.init(); synthesizer.delegate = self }
+    private var watchdog: Task<Void, Never>?
+    private var monitor: SpeechPlaybackMonitor?
+    private var audioEvents: Task<Void, Never>?
+    override init() {
+        super.init(); synthesizer.delegate = self
+        #if os(watchOS)
+        // Short spoken replies use Apple's managed speech session and default
+        // Watch route, rather than the app's preceding microphone session.
+        synthesizer.usesApplicationAudioSession = false
+        #endif
+        audioEvents = Task { [weak self] in
+            for await notification in NotificationCenter.default.notifications(named: AVAudioSession.interruptionNotification) {
+                guard !Task.isCancelled else { return }
+                guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                      AVAudioSession.InterruptionType(rawValue: raw) == .began else { continue }
+                self?.completeCurrent(.interrupted)
+            }
+        }
+    }
     static var defaultLanguage: String { AVSpeechSynthesisVoice.currentLanguageCode() }
     static func installedVoiceOptions() -> [SpeechVoiceOption] {
         AVSpeechSynthesisVoice.speechVoices().filter { !$0.voiceTraits.contains(.isPersonalVoice) }.map(option)
@@ -143,23 +161,38 @@ import Foundation
         return nil
     }
     func speak(_ text: String, preferredID: String? = nil, language: String? = nil,
-               ended: @escaping @MainActor () -> Void) throws {
+               ended: @escaping @MainActor (SpeechPlaybackEnd) -> Void) throws {
         stop()
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { ended(.finished); return }
         guard let selected = Self.select(preferredID: preferredID, language: language ?? Self.defaultLanguage)
         else { throw AudioFailure.voiceUnavailable }
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playback, mode: .spokenAudio)
-            try session.setActive(true)
-            ownsSession = true
+            #if os(iOS)
+            try session.setCategory(.playback, mode: .spokenAudio, policy: .default)
+            try session.setActive(true); ownsSession = true
+            #endif
             let utterance = AVSpeechUtterance(string: String(text.prefix(8000)))
             utterance.voice = selected
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
             utteranceID = ObjectIdentifier(utterance); onEnd = ended
+            monitor = SpeechPlaybackMonitor(now: ProcessInfo.processInfo.systemUptime, characterCount: utterance.speechString.count)
             synthesizer.speak(utterance)
+            let id = ObjectIdentifier(utterance)
+            watchdog = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(250))
+                    guard !Task.isCancelled, let self, utteranceID == id else { return }
+                    if let end = monitor?.outcome(now: ProcessInfo.processInfo.systemUptime,
+                                                 isSpeaking: synthesizer.isSpeaking, isPaused: synthesizer.isPaused) {
+                        completeCurrent(end); return
+                    }
+                }
+            }
         } catch { releaseSession(); throw error }
     }
     func stop() {
+        watchdog?.cancel(); watchdog = nil; monitor = nil
         utteranceID = nil; onEnd = nil
         synthesizer.stopSpeaking(at: .immediate)
         releaseSession()
@@ -172,19 +205,35 @@ import Foundation
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        finished(ObjectIdentifier(utterance))
+        finished(ObjectIdentifier(utterance), outcome: .finished)
     }
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        finished(ObjectIdentifier(utterance))
+        finished(ObjectIdentifier(utterance), outcome: .interrupted)
     }
-    nonisolated private func finished(_ id: ObjectIdentifier) {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        progress(ObjectIdentifier(utterance))
+    }
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString range: NSRange,
+                                      utterance: AVSpeechUtterance) {
+        progress(ObjectIdentifier(utterance))
+    }
+    nonisolated private func progress(_ id: ObjectIdentifier) {
+        Task { @MainActor [weak self] in
+            guard let self, utteranceID == id else { return }
+            monitor?.progressed(now: ProcessInfo.processInfo.systemUptime)
+        }
+    }
+    nonisolated private func finished(_ id: ObjectIdentifier, outcome: SpeechPlaybackEnd) {
         Task { @MainActor [weak self] in
             guard let self, self.utteranceID == id else { return }
-            let callback = self.onEnd
-            self.utteranceID = nil; self.onEnd = nil
-            self.releaseSession()
-            callback?()
+            completeCurrent(outcome)
         }
+    }
+    private func completeCurrent(_ outcome: SpeechPlaybackEnd) {
+        guard utteranceID != nil else { return }
+        let callback = onEnd
+        stop()
+        callback?(outcome)
     }
 }
 

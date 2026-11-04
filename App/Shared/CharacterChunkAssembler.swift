@@ -53,7 +53,8 @@ struct CharacterChunkAssembler: Sendable {
               chunk.bytes.count == min(CharacterChunk.payloadBytes, chunk.totalBytes - chunk.index * CharacterChunk.payloadBytes),
               chunk.manifest.sha256.count == 64,
               chunk.manifest.sha256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
-              chunk.manifest.name.count <= 40, chunk.manifest.sourceModel.count <= 100 else {
+              chunk.manifest.name.count <= 40, chunk.manifest.sourceModel.count <= 100,
+              (chunk.manifest.description?.count ?? 0) <= 2_000 else {
             throw CharacterTransferError.invalidChunk
         }
         guard !retiredTransfers.contains(chunk.transferID) else { return nil }
