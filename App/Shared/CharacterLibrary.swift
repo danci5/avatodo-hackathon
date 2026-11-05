@@ -14,6 +14,7 @@ struct StoredCharacter: Identifiable {
 struct CharacterLibrarySnapshot {
     let characters: [StoredCharacter]
     let selectedID: UUID?
+    let defaultName: String
     var selected: StoredCharacter? { characters.first { $0.id == selectedID } }
 }
 
@@ -23,6 +24,7 @@ struct CharacterLibrary {
     private struct Index: Codable {
         var characters: [CharacterManifest]
         var selectedID: UUID?
+        var defaultName: String? = nil
     }
     let folder: URL
     private var indexURL: URL { folder.appendingPathComponent("library.json") }
@@ -40,7 +42,7 @@ struct CharacterLibrary {
         let previous = try readIndex()
         guard !previous.characters.contains(where: { $0.id == manifest.id }) else { throw CharacterLibraryFailure.invalidArtwork }
         let characters = [manifest] + previous.characters.filter { readImage($0) != nil }
-        let next = Index(characters: Array(characters.prefix(3)), selectedID: manifest.id)
+        let next = Index(characters: Array(characters.prefix(3)), selectedID: manifest.id, defaultName: previous.defaultName)
         try createFolder()
         try image.write(to: imageURL(manifest.id), options: .atomic)
         do { try writeIndex(next) }
@@ -78,12 +80,29 @@ struct CharacterLibrary {
         return snapshot(index)
     }
 
+    @discardableResult func rename(_ id: UUID?, name: String) throws -> CharacterLibrarySnapshot {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name.count <= 40 else { throw CharacterLibraryFailure.invalidName }
+        var index = try readIndex()
+        if let id {
+            guard let position = index.characters.firstIndex(where: { $0.id == id }),
+                  readImage(index.characters[position]) != nil else { throw CharacterLibraryFailure.invalidArtwork }
+            // Names are editable. The generation description, artwork identity,
+            // creation date and gallery ordering are deliberately unchanged.
+            index.characters[position].name = name
+        } else { index.defaultName = name }
+        try writeIndex(index)
+        mirrorSelection(index)
+        return snapshot(index)
+    }
+
     private func readIndex() throws -> Index {
         guard FileManager.default.fileExists(atPath: indexURL.path) else { return try migrateLegacy() }
         let data = try Data(contentsOf: indexURL)
         guard data.count <= 64_000, let index = try? JSONDecoder().decode(Index.self, from: data),
               index.characters.count <= 3, Set(index.characters.map(\.id)).count == index.characters.count,
               index.characters.allSatisfy(metadataValid),
+              index.defaultName == nil || (index.defaultName!.count <= 40 && !index.defaultName!.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty),
               index.selectedID == nil || index.characters.contains(where: { $0.id == index.selectedID }) else {
             throw CharacterLibraryFailure.unreadable
         }
@@ -93,7 +112,7 @@ struct CharacterLibrary {
     private func snapshot(_ index: Index) -> CharacterLibrarySnapshot {
         CharacterLibrarySnapshot(characters: index.characters.compactMap { manifest in
             readImage(manifest).map { StoredCharacter(manifest: manifest, image: $0) }
-        }, selectedID: index.selectedID)
+        }, selectedID: index.selectedID, defaultName: index.defaultName ?? CharacterDefaults.name)
     }
 
     private func metadataValid(_ manifest: CharacterManifest) -> Bool {
@@ -177,11 +196,12 @@ struct CharacterLibrary {
 }
 
 enum CharacterLibraryFailure: Error, LocalizedError {
-    case unreadable, invalidArtwork
+    case unreadable, invalidArtwork, invalidName
     var errorDescription: String? {
         switch self {
         case .unreadable: "Your companion gallery couldn’t be opened. The saved files have been preserved."
         case .invalidArtwork: "That saved companion couldn’t be opened. Your current companion hasn’t changed."
+        case .invalidName: "Choose a companion name from 1 to 40 characters."
         }
     }
 }

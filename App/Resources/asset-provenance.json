@@ -8,7 +8,8 @@
       531,
       653
     ],
-    "prepared_sha256": "8f238403d1256b12553089ec99317e9fc4a0195ad38a23dd4eb961928e7a83b7"
+    "prepared_sha256": "8f238403d1256b12553089ec99317e9fc4a0195ad38a23dd4eb961928e7a83b7",
+    "original_description_resource": "DefaultCompanionDescription.txt"
   },
   "app_icon": {
     "generator": "Codex built-in image generation",
@@ -32,6 +33,13 @@
       320
     ],
     "frame_count": 20,
-    "prepared_sha256": "63357b490fb734d8c86a5c897fbb646b1ab4a9a7ba4920b26d6d0850ceba336a"
+    "prepared_sha256": "a38d0212d86cb0002108c1f2b69a24a4da6154be1025c720b747f1f5d1afb971",
+    "listening_refinement": {
+      "model": "muse-image-1.0",
+      "created": "2026-11-05",
+      "description": "One front paw beside the ear, other paw down, slight attentive head tilt; glasses untouched",
+      "preparation": "Single reference-image edit; local foreground masking and normalization; replaces only listening cell 1.",
+      "prompt": "Use case: precise-object-edit. One full-body animation listening pose of EXACTLY this same original stylized 3D golden lion. Preserve face, golden colors, soft fur, black sunglasses, mane, seated proportions, camera and studio lighting. Change only the gesture: an attentive slight head tilt, ONE front paw gently cupped beside its ear ABOVE and BEHIND the sunglasses arm, clearly listening. The OTHER front paw rests DOWN by the front foot. Both sunglasses lenses and frame remain untouched and in the same position. Not adjusting glasses, not holding its face, not covering ears. Warm closed-mouth expression, seated, feet and tail visible. One character centered with generous pure solid WHITE empty margins on every side. No text, no labels, no panels, no props, no second character."
+    }
   }
 }

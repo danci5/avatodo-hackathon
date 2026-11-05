@@ -1,6 +1,20 @@
 import SwiftUI
 import ImageIO
 
+/// Dance becomes unavailable while talking, but the companion remains alive
+/// and at full color instead of inheriting the standard disabled-button fade.
+struct CompanionArtworkButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { configuration.label }
+}
+
+#Preview("Artwork color while listening") {
+    VStack {
+        Button {} label: { CompanionArtwork(data: nil, phase: .ready, size: 150) }
+        Button {} label: { CompanionArtwork(data: nil, phase: .listening, size: 150) }
+            .disabled(true)
+    }.buttonStyle(CompanionArtworkButtonStyle())
+}
+
 struct CompanionArtwork: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase

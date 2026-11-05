@@ -10,6 +10,7 @@ import AvatodoCore
     var characterData: Data?
     var characterManifest: CharacterManifest?
     var characterGallery: [StoredCharacter] = []
+    var defaultCompanionName = CharacterDefaults.name
     var characterGalleryAvailable = true
     var characterDraftName = CharacterDefaults.name {
         didSet {
@@ -661,12 +662,23 @@ import AvatodoCore
         }
         catch { alert = CharacterLibraryFailure.invalidArtwork.localizedDescription }
     }
+    @discardableResult func renameCharacter(_ id: UUID?, name: String) -> Bool {
+        guard canChangeCharacter else { return false }
+        do {
+            applyCharacterLibrary(try characterLibrary.rename(id, name: name))
+            restoreSelectedCharacterDraft()
+            link.cancelCharacterTransfers()
+            publish(); sendCharacter()
+            return true
+        } catch { alert = error.localizedDescription; return false }
+    }
     private func applyCharacterLibrary(_ snapshot: CharacterLibrarySnapshot) {
         characterGallery = snapshot.characters
+        defaultCompanionName = snapshot.defaultName
         characterData = snapshot.selected?.image; characterManifest = snapshot.selected?.manifest
         state.characterID = snapshot.selected?.id
         let selectedName = snapshot.selected?.manifest.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        state.characterName = selectedName.isEmpty ? CharacterDefaults.name : selectedName
+        state.characterName = selectedName.isEmpty ? snapshot.defaultName : selectedName
         prepareWatchPoster()
     }
     private func prepareWatchPoster() {
@@ -692,7 +704,7 @@ import AvatodoCore
         } catch { /* Never send an atlas to an older Watch that would display all nine poses. */ }
     }
     private func restoreSelectedCharacterDraft() {
-        characterDraftName = characterManifest?.name ?? CharacterDefaults.name
+        characterDraftName = characterManifest?.name ?? defaultCompanionName
         characterDraftDescription = characterManifest?.description ?? (characterManifest == nil ? CharacterDefaults.description : "")
     }
     private func sendCharacter(retryForeground: Bool = false) {

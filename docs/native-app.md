@@ -144,3 +144,10 @@ The primary control moves directly from Talk to Done during connection/microphon
 Settings → Google Drive → File format offers Markdown (.md) or Plain text (.txt). The initial choice is Markdown. Selecting another format updates existing copies in place, including their names and media types. The same note/file IDs remain; no second file or imported cloud edit is created. Plain text is the mobile Drive compatibility option and keeps ordinary text/checklist marks. The owner’s real Markdown upload and web preview are confirmed; mobile TXT preview and Muse access still require device/account acceptance.
 
 Preview iPhone voice sits immediately beneath Reply voice and above Watch reply voice. Choosing an installed Watch voice uses local synthesis, avoiding phone audio generation/transfer. The iPhone-voice option remains available; preferences are not migrated or overridden. Relative playback latency has not been measured on hardware.
+
+
+## Rename a companion and read its original description (build 10)
+
+Open Your companion, then tap a saved companion tile. This selects it and opens Companion details. Edit Name and tap Done; Cancel discards the name edit. The name is stored locally, retained after reopening and used in the companion's next agent turn. The default lion can also be renamed. Renaming needs no Meta request and leaves its artwork and original description unchanged.
+
+Original description is selectable read-only text. If an older saved image has no retained description, Avatodo says it was not saved. Create a new companion is a separate form and does not edit existing generation descriptions. The bundled default lion has a clearer listening pose in this version; existing custom poses are kept unless you choose Regenerate animations.

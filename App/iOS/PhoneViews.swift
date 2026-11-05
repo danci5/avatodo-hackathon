@@ -72,7 +72,7 @@ struct PhoneCompanion: View {
                     size: min(geometry.size.width * 0.7, geometry.size.height * 0.40),
                     celebrationID: model.state.undoReceiptID, animationLayout: model.characterManifest?.animationLayout,
                     reaction: model.state.reaction, reactionID: model.state.reactionID)
-                }.buttonStyle(.plain).disabled(!model.state.phase.isIdle || reduceMotion)
+                }.buttonStyle(CompanionArtworkButtonStyle()).disabled(!model.state.phase.isIdle || reduceMotion)
                     .accessibilityLabel("Make your companion dance")
                     .frame(maxWidth: .infinity)
                 Text(model.state.caption).font(.title3.weight(.semibold))
@@ -490,6 +490,7 @@ struct CharacterScreen: View {
     @State private var previewPhase: CompanionPhase = .ready
     @State private var previewReaction: CompanionReaction?
     @State private var previewReactionID: UUID?
+    @State private var inspectedCompanion: CompanionDetailSelection?
     var body: some View {
         NavigationStack {
             Form {
@@ -509,7 +510,7 @@ struct CharacterScreen: View {
                 }
                 Section {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        companionChoice(id: nil, name: CharacterDefaults.name, image: nil)
+                        companionChoice(id: nil, name: model.defaultCompanionName, image: nil)
                         ForEach(model.characterGallery) { character in
                             companionChoice(id: character.id, name: character.manifest.name, image: character.image,
                                             animation: character.manifest.animationLayout)
@@ -519,7 +520,7 @@ struct CharacterScreen: View {
                         Text("Your saved gallery couldn’t be opened. Its files have been preserved.").font(.footnote).foregroundStyle(.secondary)
                     }
                 } header: { Text("Your companions") } footer: {
-                    Text("Ava and your three most recent creations stay on this iPhone. A new creation replaces the oldest saved custom companion. Tap a companion to use it on iPhone and Watch.")
+                    Text("The default companion and your three most recent creations stay on this iPhone. A new creation replaces the oldest saved custom companion. Tap one to select it, rename it or view its original description.")
                 }
                 Section {
                     TextField("Name", text: $model.characterDraftName).disabled(model.generating)
@@ -530,10 +531,11 @@ struct CharacterScreen: View {
                         .disabled(!model.canChangeCharacter || !model.state.hasModelKey || model.characterDraftDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     if !model.metaDataSharingAllowed { Text("Allow Meta data sharing in Settings before creating a companion.").font(.footnote).foregroundStyle(.secondary) }
                     if model.generating { HStack { ProgressView(); Text(model.generationStage).font(.subheadline) } }
-                } header: { Text("Create your own") } footer: { Text("Muse Image creates the artwork and expression poses. Avatodo prepares the animations locally and sends the same companion to your Watch. Creation uses two image requests with your Meta key; playback needs no further model requests.") }
+                } header: { Text("Create a new companion") } footer: { Text("These fields create a new companion. To rename an existing one, tap it above. Muse Image creates the artwork and expression poses. Avatodo prepares the animations locally and sends the same companion to your Watch. Creation uses two image requests with your Meta key; playback needs no further model requests.") }
             }.navigationTitle("Your companion").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+        .sheet(item: $inspectedCompanion) { CharacterDetails(model: model, selection: $0) }
         .task(id: previewingAnimations) {
             guard previewingAnimations else {
                 previewPhase = .ready; previewReaction = nil; previewReactionID = nil
@@ -562,7 +564,10 @@ struct CharacterScreen: View {
     }
     private func companionChoice(id: UUID?, name: String, image: Data?, animation: CharacterAnimationLayout? = nil) -> some View {
         let selected = model.state.characterID == id
-        return Button { model.selectCharacter(id) } label: {
+        return Button {
+            model.selectCharacter(id)
+            inspectedCompanion = CompanionDetailSelection(characterID: id, name: name.isEmpty ? CharacterDefaults.name : name)
+        } label: {
             VStack(spacing: 6) {
                 CompanionArtwork(data: image, phase: .ready, size: 74, animationLayout: animation, motionEnabled: false)
                 HStack(spacing: 4) {

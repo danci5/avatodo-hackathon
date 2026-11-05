@@ -118,8 +118,11 @@ public struct MetaClient: LanguageModel, Sendable {
         attentive head/body tilt. If it has no arms/legs, dancing is a clear whole-body wiggle;
         do not invent limbs. If it has no visible mouth, use subtle existing face/head expressions
         for speaking. Never add human anatomy, a mouth, ears or accessories absent in the reference.
-        Row 1 (FIVE cells): neutral seated friendly smile; attentive listening with one hand/paw
-        gently near the ear; thoughtful hand/paw at chin; neutral seated blink; relaxed happy smile.
+        Row 1 (FIVE cells): neutral seated friendly smile; attentive listening with a slight head
+        tilt and ONLY ONE hand/paw cupped beside its ear, the OTHER paw DOWN; thoughtful hand/paw
+        at chin; neutral seated blink; relaxed happy smile. In listening, do NOT touch, lift or adjust
+        glasses, hats or accessories. Keep paws away from glasses. If ears cannot be reached without
+        covering an accessory, use a gentle attentive head tilt with BOTH paws DOWN instead.
         Row 2 (FIVE cells): mouth-only speaking sequence. COPY the SAME neutral seated body,
         paws DOWN and head placement in ALL FIVE cells. Change ONLY mouth: closed, barely open,
         moderately open, barely open, closed smile. NO paw near chin, NO paw movement in this row.

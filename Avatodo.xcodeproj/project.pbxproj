@@ -28,8 +28,10 @@
 		3DF95340C1A90311D34BD871 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EC82811B2FF9FB43E7CFCA2F /* GoogleSignIn */; };
 		46770E5F9A266B9C1553AC5E /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F74FDB4EDA30BB51B82085F /* KeychainStore.swift */; };
 		47774E76A3E02A68EB1B1224 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
+		4DDAB4D498E0E0426B251639 /* DefaultCompanionDescription.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05B1827F7E99C2F6E08958CB /* DefaultCompanionDescription.txt */; };
 		4E777B34D44999E5F6DACBEC /* CompanionMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4EB17571290B35D30404E3 /* CompanionMotion.swift */; };
 		4F5B5E8F4F1B106E86204B88 /* AvatodoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68EFF694BCAF9DA860ED8BA /* AvatodoWatchApp.swift */; };
+		5534145D971027AC50CFE042 /* DefaultCompanionDescription.txt in Resources */ = {isa = PBXBuildFile; fileRef = 05B1827F7E99C2F6E08958CB /* DefaultCompanionDescription.txt */; };
 		585603B61A805F5DA591E71E /* PhoneViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763644AB913F6546845CC3C7 /* PhoneViews.swift */; };
 		610824378E9FB6D25802B817 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167F6A2AD1043E4C6628B69C /* WatchModel.swift */; };
 		6928B4194D43E74BA50D7FF8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F209C7E8820873050F38C19B /* PrivacyInfo.xcprivacy */; };
@@ -52,6 +54,7 @@
 		BF7F279CADA9FD4D0C372BE3 /* CharacterChunkAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14A2963079163AB66CB61C /* CharacterChunkAssembler.swift */; };
 		CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E230105EAA6DBF31D04B2876 /* Assets.xcassets */; };
 		CDBD82BDB885747364916F47 /* CompanionMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4EB17571290B35D30404E3 /* CompanionMotion.swift */; };
+		D53CE0B018B57212E4E5E020 /* CharacterDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFA78998521FBBFD60F0FF2 /* CharacterDetails.swift */; };
 		D6D09E3AC09910679AAB749C /* CharacterAnimationFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */; };
 		D984E8630876DA4C8094B7F9 /* RelayPCMEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */; };
 		E5F41473C6BFCD2D4FB21ED4 /* asset-provenance.json in Resources */ = {isa = PBXBuildFile; fileRef = 76428FF51347C2AA50A0EDAE /* asset-provenance.json */; };
@@ -87,6 +90,7 @@
 
 /* Begin PBXFileReference section */
 		03AE9CE6C7B0CAEFC2BBDD38 /* CompanionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionState.swift; sourceTree = "<group>"; };
+		05B1827F7E99C2F6E08958CB /* DefaultCompanionDescription.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = DefaultCompanionDescription.txt; sourceTree = "<group>"; };
 		0E326DF1DD0EA926EC3FF795 /* AudioPacketQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPacketQueue.swift; sourceTree = "<group>"; };
 		0F40326A4592B3BDE6A623C5 /* Avatodo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Avatodo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		167F6A2AD1043E4C6628B69C /* WatchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchModel.swift; sourceTree = "<group>"; };
@@ -95,6 +99,7 @@
 		3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopmentBootstrap.swift; sourceTree = "<group>"; };
 		57A55234BFDB05ADAF96B5CC /* ReplyAudioWire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplyAudioWire.swift; sourceTree = "<group>"; };
 		5C97B6F894F47549BAEF50E3 /* CharacterAnimationFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAnimationFrames.swift; sourceTree = "<group>"; };
+		5EFA78998521FBBFD60F0FF2 /* CharacterDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterDetails.swift; sourceTree = "<group>"; };
 		6A7850E087659A51BDC947E3 /* RelayPCMEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayPCMEncoder.swift; sourceTree = "<group>"; };
 		763644AB913F6546845CC3C7 /* PhoneViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneViews.swift; sourceTree = "<group>"; };
 		76428FF51347C2AA50A0EDAE /* asset-provenance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "asset-provenance.json"; sourceTree = "<group>"; };
@@ -182,6 +187,7 @@
 			children = (
 				76428FF51347C2AA50A0EDAE /* asset-provenance.json */,
 				E230105EAA6DBF31D04B2876 /* Assets.xcassets */,
+				05B1827F7E99C2F6E08958CB /* DefaultCompanionDescription.txt */,
 				1929F23DAE850BD5A002DAF9 /* DefaultLionAtlas.png */,
 			);
 			path = Resources;
@@ -219,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				7929606CD93008BF8FB35951 /* AvatodoApp.swift */,
+				5EFA78998521FBBFD60F0FF2 /* CharacterDetails.swift */,
 				9EF7871183FFE7D38A1B3BE9 /* DevelopmentAudioProbe.swift */,
 				3BC4C5B15F49B36CD008703E /* DevelopmentBootstrap.swift */,
 				F6D4B26750DBF53A17E54810 /* GoogleDriveSync.swift */,
@@ -326,6 +333,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CBB879F9D46ED6BD0B2FD37C /* Assets.xcassets in Resources */,
+				5534145D971027AC50CFE042 /* DefaultCompanionDescription.txt in Resources */,
 				7FA8D11D9126BAC195ABD4EB /* DefaultLionAtlas.png in Resources */,
 				6928B4194D43E74BA50D7FF8 /* PrivacyInfo.xcprivacy in Resources */,
 				E5F41473C6BFCD2D4FB21ED4 /* asset-provenance.json in Resources */,
@@ -337,6 +345,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7958EAAD77F1E4C96BAA979 /* Assets.xcassets in Resources */,
+				4DDAB4D498E0E0426B251639 /* DefaultCompanionDescription.txt in Resources */,
 				A2E74427F9C594856A517636 /* DefaultLionAtlas.png in Resources */,
 				25BAB5922280AE4CF1347640 /* asset-provenance.json in Resources */,
 			);
@@ -353,6 +362,7 @@
 				13C8304A6D3F7E1CEFF3B1E9 /* AvatodoApp.swift in Sources */,
 				D6D09E3AC09910679AAB749C /* CharacterAnimationFrames.swift in Sources */,
 				179B9AEAF6694731F1E98F0D /* CharacterChunkAssembler.swift in Sources */,
+				D53CE0B018B57212E4E5E020 /* CharacterDetails.swift in Sources */,
 				0791EC76EB8583DD04E22FD4 /* CharacterLibrary.swift in Sources */,
 				1D3BC37E6BE6F5129A0435FF /* CharacterStore.swift in Sources */,
 				F19B08B61994405804CF1447 /* CompanionLink.swift in Sources */,
@@ -487,7 +497,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -553,7 +563,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

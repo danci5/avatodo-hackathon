@@ -18,7 +18,7 @@ struct WatchCompanion: View {
                         CompanionArtwork(data: model.characterData, phase: model.state.phase,
                             size: 90, celebrationID: model.state.undoReceiptID, animationLayout: model.characterManifest?.animationLayout,
                             reaction: model.state.reaction, reactionID: model.state.reactionID)
-                    }.buttonStyle(.plain).disabled(!model.state.phase.isIdle || reduceMotion)
+                    }.buttonStyle(CompanionArtworkButtonStyle()).disabled(!model.state.phase.isIdle || reduceMotion)
                         .accessibilityLabel("Make your companion dance")
                         .frame(maxWidth: .infinity)
                     Text(model.state.caption).font(.footnote).foregroundStyle(.secondary)

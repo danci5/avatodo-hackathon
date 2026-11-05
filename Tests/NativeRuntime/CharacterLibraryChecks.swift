@@ -38,6 +38,32 @@ import UniformTypeIdentifiers
         precondition(!FileManager.default.fileExists(atPath: root.appendingPathComponent(third.id.uuidString + ".png").path))
         print("PASS adding animation atomically replaces one gallery entry and preserves creation order")
 
+        let originalManifest = upgraded.selected!.manifest
+        let renamed = try library.rename(replacement.id, name: "  Nova  ")
+        let savedName = try CharacterLibrary(folder: root).load()
+        precondition(savedName.selected?.manifest.name == "Nova")
+        precondition(renamed.characters.map(\.id) == upgraded.characters.map(\.id))
+        precondition(savedName.selected?.image == image)
+        var expectedManifest = originalManifest; expectedManifest.name = "Nova"
+        precondition(savedName.selected?.manifest == expectedManifest)
+        let mirrored = try JSONDecoder().decode(CharacterManifest.self, from: Data(contentsOf: root.appendingPathComponent("current.json")))
+        precondition(mirrored == expectedManifest)
+        print("PASS rename survives reopening and preserves original prompt, artwork, creation date, selection and gallery order")
+
+        _ = try library.rename(nil, name: "Leo")
+        let defaultNamed = try library.select(nil)
+        precondition(defaultNamed.defaultName == "Leo" && defaultNamed.selectedID == nil)
+        _ = try library.add(image, manifest: manifest("Five"))
+        let afterAdding = try CharacterLibrary(folder: root).load()
+        precondition(afterAdding.defaultName == "Leo")
+        for invalid in ["  ", String(repeating: "a", count: 41)] {
+            do { _ = try library.rename(nil, name: invalid); preconditionFailure("Invalid name accepted") }
+            catch CharacterLibraryFailure.invalidName { }
+        }
+        let afterInvalid = try library.load()
+        precondition(afterInvalid.defaultName == "Leo")
+        print("PASS default companion renames survive selection and new creations; invalid names cannot change saved metadata")
+
         let corrupt = root.appendingPathComponent("library.json")
         try Data("broken".utf8).write(to: corrupt)
         do { _ = try library.add(image, manifest: manifest("Five")); preconditionFailure("Corrupt index overwritten") }
@@ -58,6 +84,9 @@ import UniformTypeIdentifiers
         precondition(migrated.selected?.manifest.name == "Nikola")
         precondition(migrated.selected?.manifest.description == nil)
         precondition(migrated.characters.first { $0.id == recoveredID }?.manifest.name == "Saved companion")
+        precondition(migrated.defaultName == CharacterDefaults.name)
+        let recoveredRenamed = try CharacterLibrary(folder: legacyRoot).rename(recoveredID, name: "Milo")
+        precondition(recoveredRenamed.characters.first { $0.id == recoveredID }?.manifest.description == nil)
         print("PASS legacy current character and cached artwork recovered without inventing missing descriptions")
     }
     static func png() throws -> Data {
