@@ -14,7 +14,7 @@ Exact physical-device behavior is still being verified. Simulator builds do not 
 
 ## Current TestFlight status, 5 November
 
-Build **0.1.0 (9)** uploaded successfully at 00:25:35 CET with optional Drive Markdown/plain-text formats, corrected voice-preview order and the Talk/Done startup fix. App Store Connect confirms **Ready to Submit**, a 90-day window, assignment to Avatodo Internal's one invited owner, and saved/reloaded instructions. Update through TestFlight to build **0.1.0 (9)**. External review/public installation remains pending. Later owner reports confirm Watch speaker replies and a real personal Drive Markdown upload; full physical acceptance of build 9, TXT preview and Muse access are still pending.
+Build **0.1.0 (10)** uploaded successfully at 01:43:36 CET with full-color companion states, clearer default listening artwork, editable companion names/read-only original descriptions, paused-speech accumulation and clean Drive filenames. It retains the prior voice-preview and Talk/Done fixes. App Store Connect confirms **Ready to Submit**, a 90-day window, assignment to Avatodo Internal's one invited owner, and saved/reloaded instructions. Update through TestFlight to build **0.1.0 (10)**. External review/public installation remains pending. Later owner reports confirm Watch speaker replies and a real personal Drive Markdown upload. The owner also confirmed an extensionless plain-text file opens in iPhone Drive. Full physical build-10 acceptance, automatic naming migration and Muse access remain pending.
 
 ## Historical build-5 TestFlight checkpoint
 
