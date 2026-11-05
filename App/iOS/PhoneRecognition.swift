@@ -9,8 +9,12 @@ import AvatodoCore
     private var recognizer: SFSpeechRecognizer?
     private var generation = UUID()
     private var result = SpeechFinalization()
+    private var transcript = SpeechTranscript()
     private(set) var onDevice = false
     var hasRecognizedWords: Bool { result.hasRecognizedWords }
+    #if DEBUG && targetEnvironment(simulator)
+    var debugSnapshot: ((String, [Double], [Double], Bool) -> Void)?
+    #endif
 
     func start(partial: @escaping @MainActor (String) -> Void,
                failed: @escaping @MainActor (SpeechRecognitionFailure) -> Void) async throws {
@@ -31,13 +35,25 @@ import AvatodoCore
         self.result = SpeechFinalization()
         recognition = recognizer.recognitionTask(with: request) { @Sendable [weak self] result, error in
             let words = result?.bestTranscription.formattedString
+            let segments = result?.bestTranscription.segments.map {
+                SpeechTranscriptSegment(location: $0.substringRange.location, length: $0.substringRange.length,
+                                        timestamp: $0.timestamp, duration: $0.duration)
+            } ?? []
             let done = result?.isFinal ?? false
+            #if DEBUG && targetEnvironment(simulator)
+            let starts = result?.bestTranscription.segments.map(\.timestamp) ?? []
+            let lengths = result?.bestTranscription.segments.map(\.duration) ?? []
+            #endif
             let issue = error.map { SpeechServiceIssue(domain: ($0 as NSError).domain, code: ($0 as NSError).code) }
             Task { @MainActor [weak self] in
                 guard let self, self.generation == token else { return }
-                self.result.receive(text: words, isFinal: done, issue: issue)
+                #if DEBUG && targetEnvironment(simulator)
+                self.debugSnapshot?(words ?? "", starts, lengths, done)
+                #endif
+                let accumulated = words.map { self.transcript.receive($0, segments: segments) }
+                self.result.receive(text: accumulated, isFinal: done, issue: issue)
                 if let failure = self.result.failure { failed(failure); return }
-                if let words { partial(words) }
+                if let accumulated { partial(accumulated) }
             }
         }
     }
@@ -87,6 +103,6 @@ import AvatodoCore
     func cancel() {
         generation = UUID(); recognition?.cancel(); recognition = nil
         request?.endAudio(); request = nil; recognizer = nil
-        result = SpeechFinalization(); onDevice = false
+        result = SpeechFinalization(); transcript = SpeechTranscript(); onDevice = false
     }
 }

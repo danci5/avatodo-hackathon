@@ -34,6 +34,7 @@ struct PhoneRoot: View {
             do { try DevelopmentBootstrap.importKeyIfProvided(); model.refreshKey() }
             catch { model.alert = error.localizedDescription }
             await DevelopmentAudioProbe.runIfRequested()
+            await DevelopmentSpeechProbe.runIfRequested()
             #endif
             await model.refreshNotes()
             await model.drive.restore(notes: model.notes)

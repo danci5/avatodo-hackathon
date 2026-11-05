@@ -151,3 +151,8 @@ Preview iPhone voice sits immediately beneath Reply voice and above Watch reply 
 Open Your companion, then tap a saved companion tile. This selects it and opens Companion details. Edit Name and tap Done; Cancel discards the name edit. The name is stored locally, retained after reopening and used in the companion's next agent turn. The default lion can also be renamed. Renaming needs no Meta request and leaves its artwork and original description unchanged.
 
 Original description is selectable read-only text. If an older saved image has no retained description, Avatodo says it was not saved. Create a new companion is a separate form and does not edit existing generation descriptions. The bundled default lion has a clearer listening pose in this version; existing custom poses are kept unless you choose Regenerate animations.
+
+
+## Pauses within one recording (build 10)
+
+Speaking, pausing and continuing before Done remains one recording. The phone retains earlier timed recognition phrases while the current phrase changes. Corrections replace the matching audio interval, and a later full/cumulative result can revise earlier text without duplication. Watch uses the same phone recognition path and receives the complete live transcript. Done still waits for successful finalization before sending text to the agent. Cancellation or a new capture clears this RAM-only transcription; no audio or conversation archive is added. The existing 60-second phone and 30-second Watch capture bounds still apply.
