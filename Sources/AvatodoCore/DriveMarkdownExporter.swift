@@ -41,12 +41,11 @@ public struct DriveExportSummary: Sendable {
 
 public enum DriveCopyFormat: String, Codable, CaseIterable, Sendable {
     case markdown, plainText
-    public var title: String { self == .markdown ? "Markdown (.md)" : "Plain text (.txt)" }
+    public var title: String { self == .markdown ? "Markdown" : "Plain text" }
     public var mimeType: String { self == .markdown ? "text/markdown" : "text/plain" }
     var marker: String { self == .markdown ? "1" : "plain_text_v1" }
     func filename(_ note: Note) -> String {
-        let markdown = NoteMarkdown.filename(note)
-        return self == .markdown ? markdown : String(markdown.dropLast(3)) + ".txt"
+        DriveNoteNames.base(note)
     }
     public func text(_ note: Note) -> String {
         guard self == .plainText else { return NoteMarkdown.text(note) }
@@ -56,6 +55,31 @@ public enum DriveCopyFormat: String, Codable, CaseIterable, Sendable {
             text += "\n" + note.items.map { "[\($0.isComplete ? "x" : " ")] \($0.text.replacingOccurrences(of: "\n", with: " "))" }.joined(separator: "\n") + "\n"
         }
         return text
+    }
+}
+
+enum DriveNoteNames {
+    static func base(_ note: Note) -> String {
+        let clean = note.title.map { $0 == "/" || $0 == "\\" ? Character(" ") : $0 }
+        let title = String(String(clean).split(whereSeparator: \.isWhitespace).joined(separator: " ").prefix(100))
+        return title.isEmpty || title == "." || title == ".." ? "Note" : title
+    }
+    private static func key(_ name: String) -> String {
+        name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+    }
+    static func names(_ notes: [Note], reserved: [String] = []) -> [UUID: String] {
+        let bases = Set(notes.map { key(base($0)) })
+        var used = Set(reserved.map(key)), names: [UUID: String] = [:]
+        for note in notes.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+            let title = base(note)
+            var candidate = title, number = 2
+            // Do not take another note's literal title, e.g. Shopping 2.
+            while used.contains(key(candidate)) || (candidate != title && bases.contains(key(candidate))) {
+                candidate = title + " " + String(number); number += 1
+            }
+            names[note.id] = candidate; used.insert(key(candidate))
+        }
+        return names
     }
 }
 
@@ -88,6 +112,7 @@ public actor DriveMarkdownExporter {
     }
     private struct File: Decodable {
         let id: String
+        var name: String?
         var mimeType: String?
         var appProperties: [String: String]?
     }
@@ -104,7 +129,7 @@ public actor DriveMarkdownExporter {
         guard !running else { throw DriveExportError.busy }
         running = true; defer { running = false }
         var index = try load(accountID: accountID)
-        let fields = "nextPageToken,files(id,mimeType,appProperties)"
+        let fields = "nextPageToken,files(id,name,mimeType,appProperties)"
         let folders = try await list(query: "trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='avatodo_role' and value='notes_folder_v1' }", fields: fields, token: token)
         guard folders.count <= 1 else { throw DriveExportError.ambiguousFolder }
         let folderID: String
@@ -135,15 +160,21 @@ public actor DriveMarkdownExporter {
             byNote[noteID] = file
         }
         var uploaded = 0
+        let activeIDs = Set(notes.map { $0.id.uuidString })
+        let names = DriveNoteNames.names(notes, reserved: remote.filter {
+            !activeIDs.contains($0.appProperties?["avatodo_note_id"] ?? "")
+        }.compactMap(\.name))
         for note in notes.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
             try Task.checkCancellation()
             let localID = note.id.uuidString
             let existing = byNote[localID]
+            guard let filename = names[note.id] else { throw DriveExportError.invalidResponse }
             if existing?.appProperties?["avatodo_revision"] == String(note.revision),
-               existing?.appProperties?["avatodo_format"] == format.marker, existing?.mimeType == format.mimeType { continue }
+               existing?.appProperties?["avatodo_format"] == format.marker, existing?.mimeType == format.mimeType,
+               existing?.name == filename { continue }
             let fileID = try await reserveID(existing: existing?.id ?? index.fileIDs[localID], token: token)
             index.fileIDs[localID] = fileID; try save(index)
-            var metadata: [String: JSONValue] = ["name": .string(format.filename(note)), "mimeType": .string(format.mimeType),
+            var metadata: [String: JSONValue] = ["name": .string(filename), "mimeType": .string(format.mimeType),
                 "appProperties": .object(["avatodo_note_id": .string(localID),
                     "avatodo_revision": .string(String(note.revision)), "avatodo_format": .string(format.marker)])]
             if existing == nil { metadata["id"] = .string(fileID); metadata["parents"] = .array([.string(folderID)]) }

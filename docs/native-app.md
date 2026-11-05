@@ -156,3 +156,8 @@ Original description is selectable read-only text. If an older saved image has n
 ## Pauses within one recording (build 10)
 
 Speaking, pausing and continuing before Done remains one recording. The phone retains earlier timed recognition phrases while the current phrase changes. Corrections replace the matching audio interval, and a later full/cumulative result can revise earlier text without duplication. Watch uses the same phone recognition path and receives the complete live transcript. Done still waits for successful finalization before sending text to the agent. Cancellation or a new capture clears this RAM-only transcription; no audio or conversation archive is added. The existing 60-second phone and 30-second Watch capture bounds still apply.
+
+
+## Clean Google Drive names (build 10)
+
+Drive copies use the note title without an internal ID or added extension. File format selects plain text or Markdown in the file metadata; both formats keep the same Drive file ID. Duplicate or occupied titles get a simple number. Drive already shows modified date/time below the title, so uploads do not add timestamps to names. Upload now also renames existing copies of current notes on the same IDs. Copies of deleted local notes remain in Drive for the user to manage.

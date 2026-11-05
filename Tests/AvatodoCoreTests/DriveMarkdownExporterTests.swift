@@ -22,8 +22,8 @@ private actor DriveFixture: DriveTransport {
 }
 private let folders = #"{"files":[{"id":"folder_1","mimeType":"application/vnd.google-apps.folder"}]}"#
 private let emptyFiles = #"{"files":[]}"#
-private func driveNote() -> Note {
-    Note(id: UUID(), kind: .checklist, title: "Grocery / run", body: "For tonight", isComplete: false,
+private func driveNote(id: UUID = UUID()) -> Note {
+    Note(id: id, kind: .checklist, title: "Grocery / run", body: "For tonight", isComplete: false,
          items: [ChecklistItem(text: "Oat milk"), ChecklistItem(text: "Eggs", isComplete: true)], revision: 2)
 }
 private func driveState() -> (URL, URL) {
@@ -47,7 +47,7 @@ private func driveState() -> (URL, URL) {
     #expect(text.contains("For tonight"))
     #expect(text.contains("[ ] Oat milk\n[x] Eggs"))
     #expect(!text.contains("avatodo_id:") && !text.contains("revision:") && !text.contains("---"))
-    #expect(DriveCopyFormat.plainText.filename(note).hasSuffix(".txt"))
+    #expect(DriveCopyFormat.plainText.filename(note) == "Grocery run")
     #expect(DriveCopyFormat.markdown.text(note) == NoteMarkdown.text(note))
 }
 
@@ -74,12 +74,43 @@ private func driveState() -> (URL, URL) {
 @Test func drivePlainTextSkipsAnUnchangedRevisionInTheSelectedFormat() async throws {
     let (url, folder) = driveState(); defer { try? FileManager.default.removeItem(at: folder) }
     let note = driveNote()
-    let files = "{\"files\":[{\"id\":\"copy_1\",\"mimeType\":\"text/plain\",\"appProperties\":{\"avatodo_note_id\":\"\(note.id.uuidString)\",\"avatodo_revision\":\"2\",\"avatodo_format\":\"plain_text_v1\"}}]}"
+    let files = "{\"files\":[{\"id\":\"copy_1\",\"name\":\"Grocery run\",\"mimeType\":\"text/plain\",\"appProperties\":{\"avatodo_note_id\":\"\(note.id.uuidString)\",\"avatodo_revision\":\"2\",\"avatodo_format\":\"plain_text_v1\"}}]}"
     let fixture = DriveFixture([.reply(200, folders), .reply(200, files)])
     let result = try await DriveMarkdownExporter(stateURL: url, transport: fixture)
         .upload(notes: [note], accountID: "account_A", format: .plainText, token: { "fixture-token" })
     #expect(result.uploadedCount == 0)
     #expect(await fixture.requests.count == 2)
+}
+
+@Test func driveLegacyVisibleIDsAndExtensionsMigrateOnTheSameFile() async throws {
+    for format in DriveCopyFormat.allCases {
+        let (url, folder) = driveState(); defer { try? FileManager.default.removeItem(at: folder) }
+        let note = driveNote()
+        let oldName = "Grocery run (" + note.id.uuidString.prefix(8) + ")." + (format == .plainText ? "txt" : "md")
+        let files = "{\"files\":[{\"id\":\"same_copy\",\"name\":\"\(oldName)\",\"mimeType\":\"\(format.mimeType)\",\"appProperties\":{\"avatodo_note_id\":\"\(note.id.uuidString)\",\"avatodo_revision\":\"2\",\"avatodo_format\":\"\(format.marker)\"}}]}"
+        let fixture = DriveFixture([.reply(200, folders), .reply(200, files), .reply(200, #"{"id":"same_copy"}"#)])
+        let summary = try await DriveMarkdownExporter(stateURL: url, transport: fixture)
+            .upload(notes: [note], accountID: "account_A", format: format, token: { "fixture-token" })
+        let requests = await fixture.requests
+        #expect(summary.uploadedCount == 1 && requests.count == 3)
+        #expect(requests.last?.httpMethod == "PATCH" && requests.last?.url?.path.hasSuffix("same_copy") == true)
+        #expect(!requests.contains { $0.httpMethod == "POST" || $0.url!.path.contains("generateIds") })
+        let body = String(data: requests.last!.httpBody!, encoding: .utf8)!
+        #expect(body.contains("\"name\":\"Grocery run\"") && body.contains(format.mimeType))
+    }
+}
+
+@Test func driveNamesStayReadableUniqueAndStableAcrossEditsAndInputOrder() {
+    var first = driveNote(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!)
+    var second = driveNote(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!)
+    var literal = driveNote(id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!)
+    first.title = "Shopping"; second.title = "Shopping"; literal.title = "Shopping 2"
+    let names = DriveNoteNames.names([first, second, literal], reserved: ["Shopping 3"])
+    #expect(names[first.id] == "Shopping" && names[second.id] == "Shopping 4" && names[literal.id] == "Shopping 2")
+    first.body = "Updated text"; first.revision += 1
+    #expect(DriveNoteNames.names([literal, second, first], reserved: ["Shopping 3"]) == names)
+    #expect(DriveCopyFormat.markdown.filename(first) == "Shopping")
+    #expect(DriveCopyFormat.plainText.filename(first) == "Shopping")
 }
 
 @Test func driveCreatesUserOwnedFolderAndMarkdownWithoutSharingPermissions() async throws {
@@ -125,7 +156,7 @@ private func driveState() -> (URL, URL) {
 @Test func driveSkipsAnUnchangedRevisionAndDoesNotImportCloudEdits() async throws {
     let (url, folder) = driveState(); defer { try? FileManager.default.removeItem(at: folder) }
     let note = driveNote()
-    let files = "{\"files\":[{\"id\":\"copy_1\",\"mimeType\":\"text/markdown\",\"appProperties\":{\"avatodo_note_id\":\"\(note.id.uuidString)\",\"avatodo_revision\":\"2\",\"avatodo_format\":\"1\"}}]}"
+    let files = "{\"files\":[{\"id\":\"copy_1\",\"name\":\"Grocery run\",\"mimeType\":\"text/markdown\",\"appProperties\":{\"avatodo_note_id\":\"\(note.id.uuidString)\",\"avatodo_revision\":\"2\",\"avatodo_format\":\"1\"}}]}"
     let fixture = DriveFixture([.reply(200, folders), .reply(200, files)])
     let result = try await DriveMarkdownExporter(stateURL: url, transport: fixture).upload(notes: [note], accountID: "account_A", token: { "fixture-token" })
     #expect(result.uploadedCount == 0)
